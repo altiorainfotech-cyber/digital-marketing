@@ -1,0 +1,19 @@
+# Cloudflare Pages Configuration
+# This file is used for Cloudflare Pages deployment settings
+
+name = "dascms"
+compatibility_date = "2024-01-01"
+
+# Pages configuration
+pages_build_output_dir = ".next"
+
+# Environment variables (set these in Cloudflare Pages dashboard)
+# Do not put sensitive values here - use the dashboard instead
+
+[env.production]
+# Production environment settings
+# All environment variables should be set in Cloudflare Pages dashboard
+
+[env.preview]
+# Preview/staging environment settings
+# All environment variables should be set in Cloudflare Pages dashboard

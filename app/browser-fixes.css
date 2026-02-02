@@ -1,0 +1,227 @@
+/**
+ * Browser-Specific CSS Fixes
+ * 
+ * This file contains CSS fixes for browser-specific issues.
+ * These are applied based on browser detection classes added to the document element.
+ */
+
+/* ============================================
+   iOS Safari Fixes
+   ============================================ */
+
+/* Fix for 100vh viewport height issue on iOS */
+.is-ios {
+  /* Use CSS custom property set by JavaScript */
+  --real-vh: var(--vh, 1vh);
+}
+
+.is-ios .min-h-screen {
+  min-height: calc(var(--real-vh, 1vh) * 100);
+}
+
+.is-ios .h-screen {
+  height: calc(var(--real-vh, 1vh) * 100);
+}
+
+/* Prevent rubber band scrolling on iOS */
+.is-ios body {
+  overscroll-behavior-y: none;
+}
+
+/* Fix for fixed positioning with keyboard on iOS */
+.is-ios input:focus,
+.is-ios textarea:focus {
+  /* Prevent page zoom on input focus */
+  font-size: 16px;
+}
+
+/* Smooth scrolling fallback for iOS */
+.is-ios.no-smooth-scroll {
+  scroll-behavior: auto;
+}
+
+/* ============================================
+   Safari Fixes
+   ============================================ */
+
+/* Backdrop filter fallback for older Safari versions */
+.browser-safari.no-backdrop-filter .backdrop-blur {
+  background-color: rgba(255, 255, 255, 0.95);
+}
+
+.browser-safari.no-backdrop-filter .dark .backdrop-blur {
+  background-color: rgba(0, 0, 0, 0.95);
+}
+
+/* Safari date input styling */
+.browser-safari input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Safari flexbox gap fallback */
+.browser-safari.no-grid-gap .flex.gap-4 > * + * {
+  margin-left: 1rem;
+}
+
+.browser-safari.no-grid-gap .flex.flex-col.gap-4 > * + * {
+  margin-top: 1rem;
+  margin-left: 0;
+}
+
+/* ============================================
+   Firefox Fixes
+   ============================================ */
+
+/* Firefox scrollbar styling */
+.browser-firefox * {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(203 213 225) transparent;
+}
+
+.browser-firefox .dark * {
+  scrollbar-color: rgb(51 65 85) transparent;
+}
+
+/* Firefox focus outline */
+.browser-firefox *:focus {
+  outline-offset: 2px;
+}
+
+/* Firefox button styling */
+.browser-firefox button::-moz-focus-inner {
+  border: 0;
+  padding: 0;
+}
+
+/* ============================================
+   Edge Fixes
+   ============================================ */
+
+/* Edge should work like Chrome, but just in case */
+.browser-edge input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}
+
+/* ============================================
+   Mobile Browser Fixes
+   ============================================ */
+
+/* Prevent text size adjustment on orientation change */
+.is-mobile {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Improve tap highlight on mobile */
+.is-mobile * {
+  -webkit-tap-highlight-color: rgba(59, 130, 246, 0.1);
+}
+
+/* Remove default mobile button styling */
+.is-mobile button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Improve touch scrolling on mobile */
+.is-mobile {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ============================================
+   Android Fixes
+   ============================================ */
+
+/* Android Chrome input styling */
+.is-android input,
+.is-android textarea,
+.is-android select {
+  /* Prevent zoom on focus */
+  font-size: 16px;
+}
+
+/* ============================================
+   General Cross-Browser Fixes
+   ============================================ */
+
+/* Normalize box-sizing across browsers */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Normalize form elements across browsers */
+input,
+button,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  margin: 0;
+}
+
+/* Remove default button styling across browsers */
+button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* Normalize focus styles across browsers */
+:focus-visible {
+  outline: 2px solid rgb(59 130 246);
+  outline-offset: 2px;
+}
+
+/* Remove default focus outline for mouse users */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Normalize disabled state across browsers */
+:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ============================================
+   Print Styles
+   ============================================ */
+
+@media print {
+  /* Hide non-essential elements when printing */
+  nav,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Ensure proper page breaks */
+  .page-break {
+    page-break-after: always;
+  }
+
+  /* Optimize colors for printing */
+  * {
+    background: white !important;
+    color: black !important;
+  }
+}
+
+/* ============================================
+   Reduced Motion Support
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,271 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Approval {
+  id         String         @id
+  assetId    String
+  reviewerId String
+  action     ApprovalAction
+  reason     String?
+  createdAt  DateTime       @default(now())
+  Asset      Asset          @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  User       User           @relation(fields: [reviewerId], references: [id])
+
+  @@index([assetId])
+}
+
+model Asset {
+  id                            String          @id
+  title                         String
+  description                   String?
+  tags                          String[]
+  assetType                     AssetType
+  uploadType                    UploadType
+  status                        AssetStatus     @default(DRAFT)
+  visibility                    VisibilityLevel @default(UPLOADER_ONLY)
+  companyId                     String?
+  uploaderId                    String
+  storageUrl                    String
+  fileSize                      Int?
+  mimeType                      String?
+  uploadedAt                    DateTime        @default(now())
+  approvedAt                    DateTime?
+  approvedById                  String?
+  rejectedAt                    DateTime?
+  rejectedById                  String?
+  rejectionReason               String?
+  targetPlatforms               String[]
+  campaignName                  String?
+  Approval                      Approval[]
+  User_Asset_approvedByIdToUser User?           @relation("Asset_approvedByIdToUser", fields: [approvedById], references: [id])
+  Company                       Company?        @relation(fields: [companyId], references: [id])
+  User_Asset_rejectedByIdToUser User?           @relation("Asset_rejectedByIdToUser", fields: [rejectedById], references: [id])
+  User_Asset_uploaderIdToUser   User            @relation("Asset_uploaderIdToUser", fields: [uploaderId], references: [id])
+  AssetDownload                 AssetDownload[]
+  AssetShare                    AssetShare[]
+  AssetVersion                  AssetVersion[]
+  AuditLog                      AuditLog[]
+  PlatformUsage                 PlatformUsage[]
+
+  @@index([companyId])
+  @@index([status])
+  @@index([uploaderId])
+  @@index([visibility])
+}
+
+model AssetDownload {
+  id             String    @id
+  assetId        String
+  downloadedById String
+  downloadedAt   DateTime  @default(now())
+  platformIntent Platform?
+  Asset          Asset     @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  User           User      @relation(fields: [downloadedById], references: [id])
+
+  @@index([assetId])
+  @@index([downloadedById])
+}
+
+model AssetShare {
+  id                                 String   @id
+  assetId                            String
+  sharedById                         String
+  sharedWithId                       String
+  targetType                         String?
+  targetId                           String?
+  createdAt                          DateTime @default(now())
+  Asset                              Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  User_AssetShare_sharedByIdToUser   User     @relation("AssetShare_sharedByIdToUser", fields: [sharedById], references: [id])
+  User_AssetShare_sharedWithIdToUser User     @relation("AssetShare_sharedWithIdToUser", fields: [sharedWithId], references: [id])
+
+  @@unique([assetId, sharedWithId])
+  @@index([assetId])
+  @@index([sharedWithId])
+}
+
+model AssetVersion {
+  id            String   @id
+  assetId       String
+  versionNumber Int
+  storageUrl    String
+  fileSize      Int?
+  createdAt     DateTime @default(now())
+  createdById   String
+  Asset         Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([assetId])
+}
+
+model AuditLog {
+  id           String       @id
+  userId       String
+  action       AuditAction
+  resourceType ResourceType
+  resourceId   String
+  metadata     Json
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime     @default(now())
+  assetId      String?
+  Asset        Asset?       @relation(fields: [assetId], references: [id])
+  User         User         @relation(fields: [userId], references: [id])
+
+  @@index([action])
+  @@index([createdAt])
+  @@index([resourceType])
+  @@index([userId])
+}
+
+model Company {
+  id        String   @id
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  Asset     Asset[]
+  User      User[]
+}
+
+model Notification {
+  id                  String           @id
+  userId              String
+  type                NotificationType
+  title               String
+  message             String
+  relatedResourceType ResourceType?
+  relatedResourceId   String?
+  isRead              Boolean          @default(false)
+  createdAt           DateTime         @default(now())
+  readAt              DateTime?
+  User                User             @relation(fields: [userId], references: [id])
+
+  @@index([createdAt])
+  @@index([isRead])
+  @@index([userId])
+}
+
+model PlatformUsage {
+  id           String   @id
+  assetId      String
+  platform     Platform
+  campaignName String
+  postUrl      String?
+  usedAt       DateTime @default(now())
+  loggedById   String
+  Asset        Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  User         User     @relation(fields: [loggedById], references: [id])
+
+  @@index([assetId])
+  @@index([platform])
+}
+
+model User {
+  id                                       String          @id
+  email                                    String          @unique
+  name                                     String
+  password                                 String?
+  role                                     UserRole
+  companyId                                String?
+  createdAt                                DateTime        @default(now())
+  updatedAt                                DateTime
+  activatedAt                              DateTime?
+  activationCode                           String?         @unique
+  activationCodeExpiresAt                  DateTime?
+  isActivated                              Boolean         @default(false)
+  deactivatedAt                            DateTime?
+  deactivatedBy                            String?
+  isActive                                 Boolean         @default(true)
+  Approval                                 Approval[]
+  Asset_Asset_approvedByIdToUser           Asset[]         @relation("Asset_approvedByIdToUser")
+  Asset_Asset_rejectedByIdToUser           Asset[]         @relation("Asset_rejectedByIdToUser")
+  Asset_Asset_uploaderIdToUser             Asset[]         @relation("Asset_uploaderIdToUser")
+  AssetDownload                            AssetDownload[]
+  AssetShare_AssetShare_sharedByIdToUser   AssetShare[]    @relation("AssetShare_sharedByIdToUser")
+  AssetShare_AssetShare_sharedWithIdToUser AssetShare[]    @relation("AssetShare_sharedWithIdToUser")
+  AuditLog                                 AuditLog[]
+  Notification                             Notification[]
+  PlatformUsage                            PlatformUsage[]
+  Company                                  Company?        @relation(fields: [companyId], references: [id])
+}
+
+enum ApprovalAction {
+  APPROVE
+  REJECT
+}
+
+enum AssetStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum AssetType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+  LINK
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  APPROVE
+  REJECT
+  DOWNLOAD
+  SHARE
+  VISIBILITY_CHANGE
+  LOGIN
+  LOGOUT
+}
+
+enum NotificationType {
+  ASSET_UPLOADED
+  ASSET_APPROVED
+  ASSET_REJECTED
+  ASSET_SHARED
+  COMMENT_ADDED
+  SYSTEM_ALERT
+}
+
+enum Platform {
+  X
+  LINKEDIN
+  INSTAGRAM
+  META_ADS
+  YOUTUBE
+}
+
+enum ResourceType {
+  ASSET
+  USER
+  COMPANY
+  APPROVAL
+}
+
+enum UploadType {
+  SEO
+  DOC
+}
+
+enum UserRole {
+  ADMIN
+  CONTENT_CREATOR
+  SEO_SPECIALIST
+}
+
+enum VisibilityLevel {
+  UPLOADER_ONLY
+  ADMIN_ONLY
+  COMPANY
+  TEAM
+  ROLE
+  SELECTED_USERS
+  PUBLIC
+}
