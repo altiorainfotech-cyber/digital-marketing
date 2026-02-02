@@ -440,7 +440,7 @@ export class DownloadService {
       downloadedById: download.downloadedById,
       downloadedAt: download.downloadedAt,
       platformIntent: download.platformIntent as Platform | undefined,
-      asset: download.Asset,
+      Asset: download.Asset,
       user: download.User,
     }));
   }

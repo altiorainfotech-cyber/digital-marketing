@@ -248,7 +248,6 @@ function DashboardContent() {
               title={stat.title}
               value={stat.value}
               icon={stat.icon}
-              trend={stat.trend}
               description={stat.description}
             />
           ))}

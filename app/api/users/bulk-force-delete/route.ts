@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/lib/auth/api-middleware';
+import { withAdmin } from '@/lib/auth';
 import { UserService } from '@/lib/services/UserService';
 import { AuditService } from '@/lib/services/AuditService';
 import prisma from '@/lib/prisma';
@@ -32,8 +32,8 @@ function getUserAgent(request: NextRequest): string | undefined {
  * @route POST /api/users/bulk-force-delete
  * @access Admin only
  */
-export const POST = withAuth(
-  async (request: NextRequest, context: any, user: any) => {
+export async function POST(request: NextRequest) {
+  return withAdmin(async (req, { user }) => {
     try {
       const { userIds } = await request.json();
 
@@ -85,6 +85,5 @@ export const POST = withAuth(
         { status: 500 }
       );
     }
-  },
-  { requiredRole: 'ADMIN' }
-);
+  })(request);
+}

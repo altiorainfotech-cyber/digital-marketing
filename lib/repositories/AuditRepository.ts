@@ -122,7 +122,7 @@ export class AuditRepository {
               role: true,
             },
           },
-          asset: {
+          Asset: {
             select: {
               id: true,
               title: true,
@@ -232,7 +232,7 @@ export class AuditRepository {
             role: true,
           },
         },
-        asset: {
+        Asset: {
           select: {
             id: true,
             title: true,
@@ -269,7 +269,7 @@ export class AuditRepository {
             role: true,
           },
         },
-        asset: {
+        Asset: {
           select: {
             id: true,
             title: true,
@@ -372,7 +372,7 @@ export class AuditRepository {
               role: true,
             },
           },
-          asset: {
+          Asset: {
             select: {
               id: true,
               title: true,

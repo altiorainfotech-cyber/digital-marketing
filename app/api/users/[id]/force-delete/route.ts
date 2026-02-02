@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/lib/auth/api-middleware';
+import { withAdmin } from '@/lib/auth';
 import { UserService } from '@/lib/services/UserService';
 import { AuditService } from '@/lib/services/AuditService';
 import prisma from '@/lib/prisma';
@@ -32,14 +32,13 @@ function getUserAgent(request: NextRequest): string | undefined {
  * @route DELETE /api/users/[id]/force-delete
  * @access Admin only
  */
-export const DELETE = withAuth(
-  async (
-    request: NextRequest,
-    context: { params: Promise<{ id: string }> },
-    user: any
-  ) => {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  return withAdmin(async (req, { user }) => {
     try {
-      const { id: userId } = await context.params;
+      const { id: userId } = await params;
 
       // Prevent self-deletion
       if (userId === user.id) {
@@ -75,6 +74,5 @@ export const DELETE = withAuth(
         { status: 500 }
       );
     }
-  },
-  { requiredRole: 'ADMIN' }
-);
+  })(request);
+}

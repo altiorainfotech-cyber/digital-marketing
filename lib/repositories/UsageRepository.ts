@@ -144,7 +144,7 @@ export class UsageRepository {
               assetType: true,
             },
           },
-          loggedBy: {
+          User: {
             select: {
               id: true,
               name: true,
@@ -421,7 +421,7 @@ export class UsageRepository {
             assetType: true,
           },
         },
-        loggedBy: {
+        User: {
           select: {
             id: true,
             name: true,
