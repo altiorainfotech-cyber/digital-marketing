@@ -15,7 +15,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withAdmin } from '@/lib/auth';
+import { withAdmin, withAuth } from '@/lib/auth';
 import { CompanyService } from '@/lib/services/CompanyService';
 import { AuditService } from '@/lib/services/AuditService';
 import prisma from '@/lib/prisma';
@@ -101,14 +101,14 @@ export const POST = withAdmin(async (request, { user }) => {
 /**
  * GET /api/companies
  * 
- * List all companies with user counts (Admin only)
+ * List all companies (All authenticated users)
  * 
  * Response:
  * {
  *   companies: Array<{
  *     id: string;
  *     name: string;
- *     userCount: number;
+ *     userCount?: number; // Only included for admins
  *     createdAt: string;
  *     updatedAt: string;
  *   }>;
@@ -117,18 +117,28 @@ export const POST = withAdmin(async (request, { user }) => {
  * 
  * Errors:
  * - 401: Unauthorized (not authenticated)
- * - 403: Forbidden (not admin)
  * - 500: Internal server error
  */
-export const GET = withAdmin(async (request, { user }) => {
+export const GET = withAuth(async (request, { user }) => {
   try {
     // List companies with user counts using CompanyService
-    // Requirement 2.3: Display all companies with user counts
+    // Requirement 2.3: Display all companies with user counts (for admins)
     const companies = await companyService.listCompanies();
 
+    // For non-admin users, remove user count information
+    const isAdmin = user.role === 'ADMIN';
+    const companiesResponse = isAdmin 
+      ? companies 
+      : companies.map(({ id, name, createdAt, updatedAt }) => ({
+          id,
+          name,
+          createdAt,
+          updatedAt,
+        }));
+
     return NextResponse.json({
-      companies,
-      total: companies.length,
+      companies: companiesResponse,
+      total: companiesResponse.length,
     });
   } catch (error: any) {
     console.error('Error listing companies:', error);

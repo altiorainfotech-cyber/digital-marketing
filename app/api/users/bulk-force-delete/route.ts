@@ -1,7 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth/api-middleware';
 import { UserService } from '@/lib/services/UserService';
-import { getIpAddress, getUserAgent } from '@/lib/utils/errorHandling';
+import { AuditService } from '@/lib/services/AuditService';
+import prisma from '@/lib/prisma';
+
+const auditService = new AuditService(prisma as any);
+const userService = new UserService(prisma as any, auditService);
+
+/**
+ * Extract IP address from request
+ */
+function getIpAddress(request: NextRequest): string | undefined {
+  return (
+    request.headers.get('x-forwarded-for')?.split(',')[0] ||
+    request.headers.get('x-real-ip') ||
+    undefined
+  );
+}
+
+/**
+ * Extract user agent from request
+ */
+function getUserAgent(request: NextRequest): string | undefined {
+  return request.headers.get('user-agent') || undefined;
+}
 
 /**
  * Bulk force delete users endpoint - permanently removes multiple users and all their related data
@@ -30,7 +52,6 @@ export const POST = withAuth(
         );
       }
 
-      const userService = new UserService();
       const ipAddress = getIpAddress(request);
       const userAgent = getUserAgent(request);
 
@@ -42,7 +63,7 @@ export const POST = withAuth(
       // Process each user deletion
       for (const userId of userIds) {
         try {
-          await userService.forceDeleteUser(userId, user.id, ipAddress, userAgent);
+          await userService.deleteUser(userId, user.id, ipAddress, userAgent);
           results.success.push(userId);
         } catch (error: any) {
           results.failed.push({

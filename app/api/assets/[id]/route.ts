@@ -113,7 +113,7 @@ export async function GET(
               role: true,
             },
           },
-          company: {
+          Company: {
             select: {
               id: true,
               name: true,
@@ -139,7 +139,7 @@ export async function GET(
         status: fullAsset.status,
         visibility: fullAsset.visibility,
         companyId: fullAsset.companyId,
-        company: fullAsset.company,
+        company: fullAsset.Company,
         uploaderId: fullAsset.uploaderId,
         uploader: fullAsset.uploader,
         storageUrl: fullAsset.storageUrl,

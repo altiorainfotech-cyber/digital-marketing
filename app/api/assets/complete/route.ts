@@ -153,7 +153,7 @@ export const POST = withAuth(async (request, { user }) => {
             role: true,
           },
         },
-        company: {
+        Company: {
           select: {
             id: true,
             name: true,

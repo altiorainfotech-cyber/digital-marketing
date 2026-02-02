@@ -27,6 +27,7 @@ export interface ApproveAssetParams {
   assetId: string;
   reviewerId: string;
   newVisibility?: VisibilityLevel;
+  allowedRole?: string;
   ipAddress?: string;
   userAgent?: string;
 }
@@ -73,7 +74,7 @@ export class ApprovalService {
    * @throws Error if asset not found or not in PENDING_REVIEW status
    */
   async approveAsset(params: ApproveAssetParams): Promise<ApprovalResult> {
-    const { assetId, reviewerId, newVisibility, ipAddress, userAgent } = params;
+    const { assetId, reviewerId, newVisibility, allowedRole, ipAddress, userAgent } = params;
 
     // Check if asset exists
     const asset = await this.prisma.asset.findUnique({
@@ -83,6 +84,7 @@ export class ApprovalService {
         title: true,
         status: true,
         visibility: true,
+        allowedRole: true,
         uploaderId: true,
         approvedAt: true,
         approvedById: true,
@@ -123,6 +125,7 @@ export class ApprovalService {
 
     // Track previous values for audit log
     const previousVisibility = asset.visibility;
+    const previousAllowedRole = asset.allowedRole;
 
     // Apply visibility change if provided
     if (newVisibility !== undefined) {
@@ -131,6 +134,11 @@ export class ApprovalService {
         throw new Error(`Invalid visibility level: ${newVisibility}`);
       }
       updateData.visibility = newVisibility;
+    }
+
+    // Apply allowedRole if provided
+    if (allowedRole !== undefined) {
+      updateData.allowedRole = allowedRole;
     }
 
     // Update the asset
@@ -142,6 +150,7 @@ export class ApprovalService {
         title: true,
         status: true,
         visibility: true,
+        allowedRole: true,
         approvedAt: true,
         approvedById: true,
         rejectedAt: true,
@@ -174,6 +183,13 @@ export class ApprovalService {
       auditContext.visibilityChanged = true;
     }
 
+    // Include allowedRole change in audit log if modified
+    if (allowedRole !== undefined && allowedRole !== previousAllowedRole) {
+      auditContext.previousAllowedRole = previousAllowedRole;
+      auditContext.newAllowedRole = allowedRole;
+      auditContext.allowedRoleChanged = true;
+    }
+
     await this.auditService.logAssetApprove(
       reviewerId,
       assetId,
@@ -190,6 +206,7 @@ export class ApprovalService {
         {
           previousValue: previousVisibility,
           newValue: newVisibility,
+          allowedRole: allowedRole,
           context: 'Changed during approval',
         },
         ipAddress,
@@ -335,7 +352,7 @@ export class ApprovalService {
    * 
    * @returns Array of assets with PENDING_REVIEW status
    */
-  async getPendingAssets(): Promise<ApprovalResult[]> {
+  async getPendingAssets(): Promise<any[]> {
     const assets = await this.prisma.asset.findMany({
       where: {
         status: AssetStatus.PENDING_REVIEW,
@@ -343,8 +360,29 @@ export class ApprovalService {
       select: {
         id: true,
         title: true,
+        description: true,
+        tags: true,
+        assetType: true,
         status: true,
         visibility: true,
+        companyId: true,
+        Company: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        uploader: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        uploadedAt: true,
+        storageUrl: true,
+        targetPlatforms: true,
+        campaignName: true,
         approvedAt: true,
         approvedById: true,
         rejectedAt: true,
@@ -356,16 +394,6 @@ export class ApprovalService {
       },
     });
 
-    return assets.map((asset) => ({
-      id: asset.id,
-      title: asset.title,
-      status: asset.status,
-      visibility: asset.visibility,
-      approvedAt: asset.approvedAt || undefined,
-      approvedById: asset.approvedById || undefined,
-      rejectedAt: asset.rejectedAt || undefined,
-      rejectedById: asset.rejectedById || undefined,
-      rejectionReason: asset.rejectionReason || undefined,
-    }));
+    return assets;
   }
 }

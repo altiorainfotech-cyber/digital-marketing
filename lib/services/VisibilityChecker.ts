@@ -238,8 +238,8 @@ export class VisibilityChecker {
    * Filter assets based on role-specific rules
    * 
    * Role-based filtering rules:
-   * - Content_Creator: Own uploads + explicitly shared assets
-   * - SEO_Specialist: Only APPROVED assets they have permission to see
+   * - Content_Creator: Own uploads (all statuses) + explicitly shared assets
+   * - SEO_Specialist: Own uploads (all statuses) + APPROVED assets they have permission to see
    * - Admin: All SEO assets, but not UPLOADER_ONLY Doc assets unless explicitly shared
    * 
    * Requirements: 7.1, 7.2, 7.3
@@ -252,19 +252,25 @@ export class VisibilityChecker {
     const filteredAssets: Asset[] = [];
 
     for (const asset of assets) {
-      // Check basic visibility first
+      // Users can ALWAYS see their own uploads regardless of status
+      if (asset.uploaderId === user.id) {
+        filteredAssets.push(asset);
+        continue;
+      }
+
+      // Check basic visibility for assets uploaded by others
       const canView = await this.canView(user, asset);
       if (!canView) {
         continue;
       }
 
-      // Apply role-specific rules
+      // Apply role-specific rules for assets uploaded by others
       if (user.role === UserRole.CONTENT_CREATOR) {
-        // Content_Creator: Own uploads + explicitly shared assets
+        // Content_Creator: Own uploads (already handled above) + explicitly shared assets
         // (visibility check already handles this)
         filteredAssets.push(asset);
       } else if (user.role === UserRole.SEO_SPECIALIST) {
-        // SEO_Specialist: Only APPROVED assets they have permission to see
+        // SEO_Specialist: Own uploads (already handled above) + Only APPROVED assets they have permission to see
         if (asset.status === AssetStatus.APPROVED) {
           filteredAssets.push(asset);
         }
@@ -273,8 +279,8 @@ export class VisibilityChecker {
         if (asset.uploadType === 'SEO') {
           filteredAssets.push(asset);
         } else if (asset.uploadType === 'DOC') {
-          // Only include Doc assets if Admin is uploader or has explicit share
-          if (asset.uploaderId === user.id || asset.visibility !== 'UPLOADER_ONLY') {
+          // Only include Doc assets if Admin is uploader (already handled above) or has explicit share
+          if (asset.visibility !== 'UPLOADER_ONLY') {
             filteredAssets.push(asset);
           }
         }

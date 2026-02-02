@@ -281,7 +281,7 @@ export class PermissionChecker {
           // Doc assets explicitly shared with the admin
           {
             uploadType: 'DOC',
-            shares: {
+            AssetShare: {
               some: {
                 sharedWithId: user.id,
               },
@@ -313,7 +313,7 @@ export class PermissionChecker {
                 : []),
               // Assets shared with this user
               {
-                shares: {
+                AssetShare: {
                   some: {
                     sharedWithId: user.id,
                   },
@@ -322,7 +322,7 @@ export class PermissionChecker {
               // Assets shared with SEO_SPECIALIST role
               {
                 visibility: VisibilityLevel.ROLE,
-                shares: {
+                AssetShare: {
                   some: {
                     targetType: 'ROLE',
                     targetId: UserRole.SEO_SPECIALIST,
@@ -343,7 +343,7 @@ export class PermissionChecker {
           { uploaderId: user.id },
           // Assets explicitly shared with them
           {
-            shares: {
+            AssetShare: {
               some: {
                 sharedWithId: user.id,
               },

@@ -29,14 +29,14 @@ const assetService = new AssetService(prisma as any, auditService, visibilityChe
 
 // Initialize UploadHandler with storage config
 const uploadHandler = new UploadHandler({
-  r2AccountId: process.env.CLOUDFLARE_R2_ACCOUNT_ID || '',
-  r2AccessKeyId: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID || '',
-  r2SecretAccessKey: process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY || '',
-  r2BucketName: process.env.CLOUDFLARE_R2_BUCKET_NAME || '',
-  streamAccountId: process.env.CLOUDFLARE_STREAM_ACCOUNT_ID || '',
-  streamApiToken: process.env.CLOUDFLARE_STREAM_API_TOKEN || '',
-  imagesAccountId: process.env.CLOUDFLARE_IMAGES_ACCOUNT_ID || '',
-  imagesApiToken: process.env.CLOUDFLARE_IMAGES_API_TOKEN || '',
+  r2AccountId: process.env.R2_ACCOUNT_ID || '',
+  r2AccessKeyId: process.env.R2_ACCESS_KEY_ID || '',
+  r2SecretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
+  r2BucketName: process.env.R2_BUCKET_NAME || '',
+  streamAccountId: process.env.STREAM_ACCOUNT_ID || '',
+  streamApiToken: process.env.STREAM_API_TOKEN || '',
+  imagesAccountId: process.env.IMAGES_ACCOUNT_ID || '',
+  imagesApiToken: process.env.IMAGES_API_TOKEN || '',
 });
 
 /**

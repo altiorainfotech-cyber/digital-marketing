@@ -18,11 +18,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth/api-middleware';
 import { AssetService } from '@/lib/services/AssetService';
 import { AuditService } from '@/lib/services/AuditService';
+import { VisibilityService } from '@/lib/services/VisibilityService';
 import { VisibilityChecker } from '@/lib/services/VisibilityChecker';
 import prisma from '@/lib/prisma';
 
 const auditService = new AuditService(prisma as any);
-const visibilityChecker = new VisibilityChecker(prisma as any);
+const visibilityService = new VisibilityService(prisma as any);
+const visibilityChecker = new VisibilityChecker(visibilityService);
 const assetService = new AssetService(prisma as any, auditService, visibilityChecker);
 
 /**

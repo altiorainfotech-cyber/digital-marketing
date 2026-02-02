@@ -39,6 +39,10 @@ export interface SearchParams {
   uploadType?: UploadType; // Filter by upload type
   uploaderId?: string; // Filter by uploader
   
+  // Assigned assets filters
+  assignedToUser?: string; // Filter assets assigned to specific user (excludes their uploads)
+  assignedToRole?: string; // User role for role-based visibility filtering
+  
   // Date range filters
   uploadedAfter?: Date; // Filter assets uploaded after this date
   uploadedBefore?: Date; // Filter assets uploaded before this date
@@ -101,6 +105,8 @@ export class SearchService {
       visibility,
       uploadType,
       uploaderId,
+      assignedToUser,
+      assignedToRole,
       uploadedAfter,
       uploadedBefore,
       approvedAfter,
@@ -114,14 +120,41 @@ export class SearchService {
     // Build where clause for Prisma query
     const where: any = {};
 
+    // Handle assigned assets filter
+    if (assignedToUser) {
+      // Exclude user's own uploads
+      where.uploaderId = { not: assignedToUser };
+      
+      // Filter by visibility rules for assigned assets
+      where.OR = [
+        { visibility: VisibilityLevel.PUBLIC },
+        { 
+          visibility: VisibilityLevel.ROLE,
+          allowedRole: assignedToRole
+        },
+        // TODO: Add shared assets logic when AssetShare is implemented
+      ];
+    }
+
     // General query search (title, description, tags)
     if (query && query.trim().length > 0) {
       const searchTerm = query.trim();
-      where.OR = [
+      const searchConditions = [
         { title: { contains: searchTerm, mode: 'insensitive' } },
         { description: { contains: searchTerm, mode: 'insensitive' } },
         { tags: { hasSome: [searchTerm] } },
       ];
+      
+      // If we already have OR conditions (from assignedToUser), combine them
+      if (where.OR) {
+        where.AND = [
+          { OR: where.OR },
+          { OR: searchConditions }
+        ];
+        delete where.OR;
+      } else {
+        where.OR = searchConditions;
+      }
     }
 
     // Specific field searches
@@ -220,7 +253,7 @@ export class SearchService {
               companyId: true,
             },
           },
-          company: {
+          Company: {
             select: {
               id: true,
               name: true,
@@ -232,16 +265,48 @@ export class SearchService {
     ]);
 
     // Filter assets by permission (Requirement 15.3)
+    // Cast to Asset type for permission checking (relations are not needed for permission logic)
+    const assetsForPermissionCheck = assets.map(asset => ({
+      id: asset.id,
+      title: asset.title,
+      description: asset.description,
+      tags: asset.tags,
+      assetType: asset.assetType,
+      uploadType: asset.uploadType,
+      status: asset.status,
+      visibility: asset.visibility,
+      allowedRole: (asset as any).allowedRole, // Include allowedRole for role-based visibility
+      companyId: asset.companyId,
+      uploaderId: asset.uploaderId,
+      storageUrl: asset.storageUrl,
+      fileSize: asset.fileSize,
+      mimeType: asset.mimeType,
+      uploadedAt: asset.uploadedAt,
+      approvedAt: asset.approvedAt,
+      approvedById: asset.approvedById,
+      rejectedAt: asset.rejectedAt,
+      rejectedById: asset.rejectedById,
+      rejectionReason: asset.rejectionReason, // Include rejection reason
+      targetPlatforms: asset.targetPlatforms,
+      campaignName: asset.campaignName,
+    })) as Asset[];
+
     const visibleAssets = await this.visibilityChecker.filterVisibleAssets(
       user,
-      assets as Asset[]
+      assetsForPermissionCheck
     );
+
+    // Get the IDs of visible assets
+    const visibleAssetIds = new Set(visibleAssets.map(a => a.id));
+    
+    // Filter the original assets (with relations) to only include visible ones
+    const visibleAssetsWithRelations = assets.filter(asset => visibleAssetIds.has(asset.id));
 
     // Calculate total pages
     const totalPages = Math.ceil(total / limit);
 
     return {
-      assets: visibleAssets,
+      assets: visibleAssetsWithRelations as any,
       total: visibleAssets.length,
       page,
       limit,
@@ -275,7 +340,7 @@ export class SearchService {
             companyId: true,
           },
         },
-        company: {
+        Company: {
           select: {
             id: true,
             name: true,
@@ -329,7 +394,7 @@ export class SearchService {
             companyId: true,
           },
         },
-        company: {
+        Company: {
           select: {
             id: true,
             name: true,
@@ -365,7 +430,7 @@ export class SearchService {
             companyId: true,
           },
         },
-        company: {
+        Company: {
           select: {
             id: true,
             name: true,
@@ -405,7 +470,7 @@ export class SearchService {
             companyId: true,
           },
         },
-        company: {
+        Company: {
           select: {
             id: true,
             name: true,
@@ -451,7 +516,7 @@ export class SearchService {
             companyId: true,
           },
         },
-        company: {
+        Company: {
           select: {
             id: true,
             name: true,

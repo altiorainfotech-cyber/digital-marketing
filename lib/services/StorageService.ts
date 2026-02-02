@@ -40,17 +40,17 @@ export class StorageService {
 
   /**
    * Route upload to appropriate storage service based on asset type
-   * Requirement 10.1: Images to Cloudflare Images
-   * Requirement 10.2: Videos to Cloudflare Stream
+   * Modified to use R2 for all file types (images, videos, documents)
+   * Requirement 10.1: Images to Cloudflare R2 (modified from Images)
+   * Requirement 10.2: Videos to Cloudflare R2 (modified from Stream)
    * Requirement 10.3: Documents to Cloudflare R2
    */
   async upload(request: StorageUploadRequest): Promise<StorageUploadResponse> {
     switch (request.assetType) {
       case AssetType.IMAGE:
-        return this.uploadToImages(request);
       case AssetType.VIDEO:
-        return this.uploadToStream(request);
       case AssetType.DOCUMENT:
+        // Use R2 for all file types
         return this.uploadToR2(request);
       case AssetType.LINK:
         // Links don't require file storage
@@ -66,6 +66,7 @@ export class StorageService {
 
   /**
    * Generate presigned URL for direct upload to storage
+   * Modified to use R2 for all file types
    * Requirement 10.4: Generate presigned URL for direct upload
    */
   async generatePresignedUploadUrl(
@@ -77,10 +78,9 @@ export class StorageService {
   ): Promise<string> {
     switch (assetType) {
       case AssetType.IMAGE:
-        return this.generateImagesUploadUrl(assetId, fileName, contentType, expiresIn);
       case AssetType.VIDEO:
-        return this.generateStreamUploadUrl(assetId, fileName, contentType, expiresIn);
       case AssetType.DOCUMENT:
+        // Use R2 for all file types
         return this.generateR2UploadUrl(assetId, fileName, contentType, expiresIn);
       case AssetType.LINK:
         // Links don't require presigned URLs
@@ -204,7 +204,8 @@ export class StorageService {
   private generateR2Key(assetId: string, fileName: string): string {
     const timestamp = Date.now();
     const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
-    return `documents/${assetId}/${timestamp}-${sanitizedFileName}`;
+    // Organize by asset ID to keep all versions together
+    return `assets/${assetId}/${timestamp}-${sanitizedFileName}`;
   }
 
   private extractR2Key(storageUrl: string): string {

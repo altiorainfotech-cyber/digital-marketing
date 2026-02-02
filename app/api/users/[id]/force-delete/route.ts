@@ -1,7 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth/api-middleware';
 import { UserService } from '@/lib/services/UserService';
-import { getIpAddress, getUserAgent } from '@/lib/utils/errorHandling';
+import { AuditService } from '@/lib/services/AuditService';
+import prisma from '@/lib/prisma';
+
+const auditService = new AuditService(prisma as any);
+const userService = new UserService(prisma as any, auditService);
+
+/**
+ * Extract IP address from request
+ */
+function getIpAddress(request: NextRequest): string | undefined {
+  return (
+    request.headers.get('x-forwarded-for')?.split(',')[0] ||
+    request.headers.get('x-real-ip') ||
+    undefined
+  );
+}
+
+/**
+ * Extract user agent from request
+ */
+function getUserAgent(request: NextRequest): string | undefined {
+  return request.headers.get('user-agent') || undefined;
+}
 
 /**
  * Force delete user endpoint - permanently removes user and all related data
@@ -18,7 +40,6 @@ export const DELETE = withAuth(
   ) => {
     try {
       const { id: userId } = await context.params;
-      const userService = new UserService();
 
       // Prevent self-deletion
       if (userId === user.id) {
@@ -32,8 +53,8 @@ export const DELETE = withAuth(
       const ipAddress = getIpAddress(request);
       const userAgent = getUserAgent(request);
 
-      // Force delete user and all related data
-      await userService.forceDeleteUser(userId, user.id, ipAddress, userAgent);
+      // Delete user and all related data
+      await userService.deleteUser(userId, user.id, ipAddress, userAgent);
 
       return NextResponse.json({
         success: true,

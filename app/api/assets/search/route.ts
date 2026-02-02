@@ -96,6 +96,8 @@ export const GET = withAuth(async (request, { user }) => {
     const visibility = searchParams.get('visibility') as VisibilityLevel | null;
     const uploadType = searchParams.get('uploadType') as UploadType | null;
     const uploaderId = searchParams.get('uploaderId');
+    const uploadedBy = searchParams.get('uploadedBy'); // 'me' for current user's uploads
+    const assignedTo = searchParams.get('assignedTo'); // 'me' for assets assigned to current user
     const uploadedAfter = searchParams.get('uploadedAfter');
     const uploadedBefore = searchParams.get('uploadedBefore');
     const approvedAfter = searchParams.get('approvedAfter');
@@ -280,6 +282,18 @@ export const GET = withAuth(async (request, { user }) => {
     if (visibility) searchParamsObj.visibility = visibility;
     if (uploadType) searchParamsObj.uploadType = uploadType;
     if (uploaderId) searchParamsObj.uploaderId = uploaderId;
+    
+    // Handle uploadedBy parameter
+    if (uploadedBy === 'me') {
+      searchParamsObj.uploaderId = user.id;
+    }
+    
+    // Handle assignedTo parameter
+    if (assignedTo === 'me') {
+      searchParamsObj.assignedToUser = user.id;
+      searchParamsObj.assignedToRole = user.role;
+    }
+    
     if (uploadedAfterDate) searchParamsObj.uploadedAfter = uploadedAfterDate;
     if (uploadedBeforeDate) searchParamsObj.uploadedBefore = uploadedBeforeDate;
     if (approvedAfterDate) searchParamsObj.approvedAfter = approvedAfterDate;
@@ -293,8 +307,9 @@ export const GET = withAuth(async (request, { user }) => {
     return NextResponse.json(result);
   } catch (error: any) {
     console.error('Error searching assets:', error);
+    console.error('Error stack:', error.stack);
     return NextResponse.json(
-      { error: 'Failed to search assets' },
+      { error: 'Failed to search assets', details: error.message },
       { status: 500 }
     );
   }

@@ -114,7 +114,7 @@ export class AuditRepository {
         take: validLimit,
         skip: offset,
         include: {
-          user: {
+          User: {
             select: {
               id: true,
               email: true,
@@ -224,7 +224,7 @@ export class AuditRepository {
     return this.prisma.auditLog.findUnique({
       where: { id },
       include: {
-        user: {
+        User: {
           select: {
             id: true,
             email: true,
@@ -261,7 +261,7 @@ export class AuditRepository {
       },
       take: validLimit,
       include: {
-        user: {
+        User: {
           select: {
             id: true,
             email: true,
@@ -364,7 +364,7 @@ export class AuditRepository {
         take: validLimit,
         skip: offset,
         include: {
-          user: {
+          User: {
             select: {
               id: true,
               email: true,

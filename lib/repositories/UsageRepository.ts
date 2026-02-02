@@ -137,7 +137,7 @@ export class UsageRepository {
         take: validLimit,
         skip: offset,
         include: {
-          asset: {
+          Asset: {
             select: {
               id: true,
               title: true,
@@ -414,7 +414,7 @@ export class UsageRepository {
       },
       take: validLimit,
       include: {
-        asset: {
+        Asset: {
           select: {
             id: true,
             title: true,

@@ -33,6 +33,11 @@ export class VisibilityService {
    * @returns true if the user can view the asset, false otherwise
    */
   async canUserViewAsset(user: User, asset: Asset): Promise<boolean> {
+    // Users can ALWAYS see their own uploads
+    if (user.id === asset.uploaderId) {
+      return true;
+    }
+
     // PUBLIC: All authenticated users can view
     if (asset.visibility === VisibilityLevel.PUBLIC) {
       return true;
@@ -41,16 +46,13 @@ export class VisibilityService {
     // UPLOADER_ONLY: Only the uploader can view, OR users with explicit share access
     // Requirement 13.3: Include explicitly shared assets
     if (asset.visibility === VisibilityLevel.UPLOADER_ONLY) {
-      if (user.id === asset.uploaderId) {
-        return true;
-      }
       // Check if asset is explicitly shared with this user
       return await this.checkAssetShare(user, asset);
     }
 
     // ADMIN_ONLY: Admin and uploader can view
     if (asset.visibility === VisibilityLevel.ADMIN_ONLY) {
-      return user.role === UserRole.ADMIN || user.id === asset.uploaderId;
+      return user.role === UserRole.ADMIN;
     }
 
     // COMPANY: All users in the asset's company can view
@@ -69,17 +71,19 @@ export class VisibilityService {
       return false;
     }
 
-    // ROLE: Users with specific role can view (via AssetShare)
+    // ROLE: Users with specific role can view (using allowedRole field)
     if (asset.visibility === VisibilityLevel.ROLE) {
+      // Check if asset has allowedRole field and it matches user's role
+      const assetWithRole = asset as any;
+      if (assetWithRole.allowedRole) {
+        return user.role === assetWithRole.allowedRole;
+      }
+      // Fallback to AssetShare for backward compatibility
       return await this.checkAssetShareForRole(user, asset);
     }
 
     // SELECTED_USERS: Only explicitly selected users can view (via AssetShare)
-    // Also include the uploader
     if (asset.visibility === VisibilityLevel.SELECTED_USERS) {
-      if (user.id === asset.uploaderId) {
-        return true;
-      }
       return await this.checkAssetShare(user, asset);
     }
 
@@ -156,7 +160,7 @@ export class VisibilityService {
     const sharedUploaderOnlyAssets = await this.prisma.asset.findMany({
       where: {
         visibility: VisibilityLevel.UPLOADER_ONLY,
-        shares: {
+        AssetShare: {
           some: {
             sharedWithId: user.id,
           },
@@ -214,7 +218,7 @@ export class VisibilityService {
         OR: [
           { uploaderId: user.id },
           {
-            shares: {
+            AssetShare: {
               some: {
                 sharedWithId: user.id,
               },

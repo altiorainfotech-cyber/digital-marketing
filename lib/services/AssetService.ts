@@ -170,13 +170,17 @@ export class AssetService {
       throw new Error('Doc uploads should not have a company assigned');
     }
 
-    // Requirement 3.3: File or URL is required
-    if (!storageUrl && !url) {
-      throw new Error('File or URL is required');
+    // Requirement 3.3: Validate based on asset type
+    // For LINK type, URL is required
+    if (assetType === AssetType.LINK && !url) {
+      throw new Error('URL is required for link assets');
     }
 
     // For LINK type, use URL as storageUrl
-    const finalStorageUrl = assetType === AssetType.LINK ? (url || storageUrl) : storageUrl;
+    // For other types, use provided storageUrl or generate temporary one
+    const finalStorageUrl = assetType === AssetType.LINK 
+      ? (url || storageUrl) 
+      : (storageUrl || `r2://pending/${Date.now()}`);
 
     // If companyId is provided, verify the company exists
     if (companyId) {
@@ -654,7 +658,20 @@ export class AssetService {
         status: true,
         visibility: true,
         companyId: true,
+        Company: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         uploaderId: true,
+        uploader: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
         storageUrl: true,
         fileSize: true,
         mimeType: true,
@@ -677,14 +694,16 @@ export class AssetService {
       status: asset.status,
       visibility: asset.visibility,
       companyId: asset.companyId || undefined,
+      Company: asset.Company || undefined,
       uploaderId: asset.uploaderId,
+      uploader: asset.uploader,
       storageUrl: asset.storageUrl,
       fileSize: asset.fileSize || undefined,
       mimeType: asset.mimeType || undefined,
       uploadedAt: asset.uploadedAt,
       targetPlatforms: asset.targetPlatforms || [],
       campaignName: asset.campaignName || undefined,
-    }));
+    })) as any;
   }
 
   /**

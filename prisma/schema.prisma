@@ -8,7 +8,7 @@ datasource db {
 }
 
 model Approval {
-  id         String         @id
+  id         String         @id @default(cuid())
   assetId    String
   reviewerId String
   action     ApprovalAction
@@ -21,7 +21,7 @@ model Approval {
 }
 
 model Asset {
-  id                            String          @id
+  id                            String          @id @default(cuid())
   title                         String
   description                   String?
   tags                          String[]
@@ -29,6 +29,7 @@ model Asset {
   uploadType                    UploadType
   status                        AssetStatus     @default(DRAFT)
   visibility                    VisibilityLevel @default(UPLOADER_ONLY)
+  allowedRole                   UserRole?
   companyId                     String?
   uploaderId                    String
   storageUrl                    String
@@ -43,10 +44,10 @@ model Asset {
   targetPlatforms               String[]
   campaignName                  String?
   Approval                      Approval[]
-  User_Asset_approvedByIdToUser User?           @relation("Asset_approvedByIdToUser", fields: [approvedById], references: [id])
+  approvedBy                    User?           @relation("Asset_approvedByIdToUser", fields: [approvedById], references: [id])
   Company                       Company?        @relation(fields: [companyId], references: [id])
-  User_Asset_rejectedByIdToUser User?           @relation("Asset_rejectedByIdToUser", fields: [rejectedById], references: [id])
-  User_Asset_uploaderIdToUser   User            @relation("Asset_uploaderIdToUser", fields: [uploaderId], references: [id])
+  rejectedBy                    User?           @relation("Asset_rejectedByIdToUser", fields: [rejectedById], references: [id])
+  uploader                      User            @relation("Asset_uploaderIdToUser", fields: [uploaderId], references: [id])
   AssetDownload                 AssetDownload[]
   AssetShare                    AssetShare[]
   AssetVersion                  AssetVersion[]
@@ -60,7 +61,7 @@ model Asset {
 }
 
 model AssetDownload {
-  id             String    @id
+  id             String    @id @default(cuid())
   assetId        String
   downloadedById String
   downloadedAt   DateTime  @default(now())
@@ -73,7 +74,7 @@ model AssetDownload {
 }
 
 model AssetShare {
-  id                                 String   @id
+  id                                 String   @id @default(cuid())
   assetId                            String
   sharedById                         String
   sharedWithId                       String
@@ -81,8 +82,8 @@ model AssetShare {
   targetId                           String?
   createdAt                          DateTime @default(now())
   Asset                              Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
-  User_AssetShare_sharedByIdToUser   User     @relation("AssetShare_sharedByIdToUser", fields: [sharedById], references: [id])
-  User_AssetShare_sharedWithIdToUser User     @relation("AssetShare_sharedWithIdToUser", fields: [sharedWithId], references: [id])
+  sharedBy                           User     @relation("AssetShare_sharedByIdToUser", fields: [sharedById], references: [id])
+  sharedWith                         User     @relation("AssetShare_sharedWithIdToUser", fields: [sharedWithId], references: [id])
 
   @@unique([assetId, sharedWithId])
   @@index([assetId])
@@ -90,7 +91,7 @@ model AssetShare {
 }
 
 model AssetVersion {
-  id            String   @id
+  id            String   @id @default(cuid())
   assetId       String
   versionNumber Int
   storageUrl    String
@@ -103,7 +104,7 @@ model AssetVersion {
 }
 
 model AuditLog {
-  id           String       @id
+  id           String       @id @default(cuid())
   userId       String
   action       AuditAction
   resourceType ResourceType
@@ -123,16 +124,16 @@ model AuditLog {
 }
 
 model Company {
-  id        String   @id
+  id        String   @id @default(cuid())
   name      String   @unique
   createdAt DateTime @default(now())
-  updatedAt DateTime
+  updatedAt DateTime @updatedAt
   Asset     Asset[]
   User      User[]
 }
 
 model Notification {
-  id                  String           @id
+  id                  String           @id @default(cuid())
   userId              String
   type                NotificationType
   title               String
@@ -150,7 +151,7 @@ model Notification {
 }
 
 model PlatformUsage {
-  id           String   @id
+  id           String   @id @default(cuid())
   assetId      String
   platform     Platform
   campaignName String
@@ -165,14 +166,14 @@ model PlatformUsage {
 }
 
 model User {
-  id                                       String          @id
+  id                                       String          @id @default(cuid())
   email                                    String          @unique
   name                                     String
   password                                 String?
   role                                     UserRole
   companyId                                String?
   createdAt                                DateTime        @default(now())
-  updatedAt                                DateTime
+  updatedAt                                DateTime        @updatedAt
   activatedAt                              DateTime?
   activationCode                           String?         @unique
   activationCodeExpiresAt                  DateTime?
@@ -181,12 +182,12 @@ model User {
   deactivatedBy                            String?
   isActive                                 Boolean         @default(true)
   Approval                                 Approval[]
-  Asset_Asset_approvedByIdToUser           Asset[]         @relation("Asset_approvedByIdToUser")
-  Asset_Asset_rejectedByIdToUser           Asset[]         @relation("Asset_rejectedByIdToUser")
-  Asset_Asset_uploaderIdToUser             Asset[]         @relation("Asset_uploaderIdToUser")
+  assetsApproved                           Asset[]         @relation("Asset_approvedByIdToUser")
+  assetsRejected                           Asset[]         @relation("Asset_rejectedByIdToUser")
+  assetsUploaded                           Asset[]         @relation("Asset_uploaderIdToUser")
   AssetDownload                            AssetDownload[]
-  AssetShare_AssetShare_sharedByIdToUser   AssetShare[]    @relation("AssetShare_sharedByIdToUser")
-  AssetShare_AssetShare_sharedWithIdToUser AssetShare[]    @relation("AssetShare_sharedWithIdToUser")
+  assetSharesCreated                       AssetShare[]    @relation("AssetShare_sharedByIdToUser")
+  assetSharesReceived                      AssetShare[]    @relation("AssetShare_sharedWithIdToUser")
   AuditLog                                 AuditLog[]
   Notification                             Notification[]
   PlatformUsage                            PlatformUsage[]

@@ -250,7 +250,7 @@ export class DownloadService {
         downloadedById: true,
         downloadedAt: true,
         platformIntent: true,
-        downloadedBy: {
+        User: {
           select: {
             id: true,
             name: true,
@@ -266,7 +266,7 @@ export class DownloadService {
       downloadedById: download.downloadedById,
       downloadedAt: download.downloadedAt,
       platformIntent: download.platformIntent as Platform | undefined,
-      user: download.downloadedBy,
+      user: download.User,
     }));
   }
 
@@ -400,7 +400,7 @@ export class DownloadService {
     limit: number = 20,
     offset: number = 0
   ): Promise<Array<AssetDownload & { 
-    asset: { id: string; title: string; assetType: string };
+    Asset: { id: string; title: string; assetType: string };
     user: { id: string; name: string; email: string };
   }>> {
     const validLimit = Math.min(Math.max(1, limit), 100);
@@ -417,14 +417,14 @@ export class DownloadService {
         downloadedById: true,
         downloadedAt: true,
         platformIntent: true,
-        asset: {
+        Asset: {
           select: {
             id: true,
             title: true,
             assetType: true,
           },
         },
-        downloadedBy: {
+        User: {
           select: {
             id: true,
             name: true,
@@ -440,8 +440,8 @@ export class DownloadService {
       downloadedById: download.downloadedById,
       downloadedAt: download.downloadedAt,
       platformIntent: download.platformIntent as Platform | undefined,
-      asset: download.asset,
-      user: download.downloadedBy,
+      asset: download.Asset,
+      user: download.User,
     }));
   }
 }

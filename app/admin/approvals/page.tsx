@@ -35,7 +35,7 @@ interface Asset {
   assetType: AssetType;
   visibility: VisibilityLevel;
   companyId?: string;
-  company?: {
+  Company?: {
     id: string;
     name: string;
   };
@@ -60,7 +60,7 @@ function PendingApprovalsContent() {
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [showRejectionModal, setShowRejectionModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
-  const [newVisibility, setNewVisibility] = useState<VisibilityLevel>(VisibilityLevel.COMPANY);
+  const [newVisibility, setNewVisibility] = useState<VisibilityLevel | 'SEO_SPECIALIST' | 'CONTENT_CREATOR'>(VisibilityLevel.COMPANY);
   const [processing, setProcessing] = useState(false);
   
   // Bulk actions
@@ -112,10 +112,26 @@ function PendingApprovalsContent() {
     setProcessing(true);
 
     try {
+      // Prepare the request body based on visibility selection
+      let requestBody: any = {};
+      
+      if (newVisibility === 'SEO_SPECIALIST' || newVisibility === 'CONTENT_CREATOR') {
+        // For role-based visibility, use ROLE visibility level and specify the role
+        requestBody = {
+          newVisibility: VisibilityLevel.ROLE,
+          allowedRole: newVisibility
+        };
+      } else {
+        // For other visibility levels, use as-is
+        requestBody = {
+          newVisibility
+        };
+      }
+
       const response = await fetch(`/api/assets/${selectedAsset.id}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newVisibility }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -252,13 +268,10 @@ function PendingApprovalsContent() {
   };
 
   const visibilityOptions: SelectOption[] = [
-    { value: VisibilityLevel.UPLOADER_ONLY, label: 'Uploader Only' },
-    { value: VisibilityLevel.ADMIN_ONLY, label: 'Admin Only' },
-    { value: VisibilityLevel.COMPANY, label: 'Company' },
-    { value: VisibilityLevel.TEAM, label: 'Team' },
-    { value: VisibilityLevel.ROLE, label: 'Role' },
-    { value: VisibilityLevel.SELECTED_USERS, label: 'Selected Users' },
-    { value: VisibilityLevel.PUBLIC, label: 'Public' },
+    { value: VisibilityLevel.UPLOADER_ONLY, label: 'Private (Uploader Only)' },
+    { value: VisibilityLevel.PUBLIC, label: 'Public (Everyone)' },
+    { value: 'SEO_SPECIALIST', label: 'SEO Specialist Role' },
+    { value: 'CONTENT_CREATOR', label: 'Content Creator Role' },
   ];
 
   const typeFilterOptions: SelectOption[] = [
@@ -270,13 +283,18 @@ function PendingApprovalsContent() {
   ];
 
   const uniqueCompanies = Array.from(
-    new Set(assets.map((a) => a.company).filter(Boolean))
+    new Map(
+      assets
+        .map((a) => a.Company)
+        .filter(Boolean)
+        .map((company) => [company!.id, company])
+    ).values()
   );
   const companyFilterOptions: SelectOption[] = [
     { value: '', label: 'All Companies' },
-    ...uniqueCompanies.map((company) => ({
-      value: company!.id,
-      label: company!.name,
+    ...uniqueCompanies.map((Company) => ({
+      value: Company!.id,
+      label: Company!.name,
     })),
   ];
 
@@ -439,9 +457,9 @@ function PendingApprovalsContent() {
                     <div>
                       <span className="font-medium">Uploader:</span> {asset.uploader.name}
                     </div>
-                    {asset.company && (
+                    {asset.Company && (
                       <div>
-                        <span className="font-medium">Company:</span> {asset.company.name}
+                        <span className="font-medium">Company:</span> {asset.Company.name}
                       </div>
                     )}
                     <div>
@@ -531,7 +549,7 @@ function PendingApprovalsContent() {
               label="Set Visibility Level"
               options={visibilityOptions}
               value={newVisibility}
-              onChange={(e) => setNewVisibility(e.target.value as VisibilityLevel)}
+              onChange={(e) => setNewVisibility(e.target.value as VisibilityLevel | 'SEO_SPECIALIST' | 'CONTENT_CREATOR')}
               helperText="Choose who can view this asset after approval"
               fullWidth
             />

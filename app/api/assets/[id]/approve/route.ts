@@ -96,7 +96,7 @@ export async function POST(
 
       // Parse request body
       const body = await request.json().catch(() => ({}));
-      const { newVisibility } = body;
+      const { newVisibility, allowedRole } = body;
 
       // Validate newVisibility if provided
       if (newVisibility && !Object.values(PrismaVisibilityLevel).includes(newVisibility as PrismaVisibilityLevel)) {
@@ -137,6 +137,7 @@ export async function POST(
         assetId,
         reviewerId: user.id,
         newVisibility: newVisibility as VisibilityLevel | undefined,
+        allowedRole: allowedRole as string | undefined,
         ipAddress,
         userAgent,
       });

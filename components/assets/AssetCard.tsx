@@ -35,6 +35,7 @@ export interface AssetCardData {
   thumbnailUrl?: string;
   fileSize?: number;
   uploadedAt: string;
+  rejectionReason?: string;
   uploader?: {
     name: string;
   };
@@ -203,6 +204,13 @@ function AssetCardGrid({
           </Badge>
         </div>
 
+        {/* Rejection Reason */}
+        {asset.status === AssetStatus.REJECTED && asset.rejectionReason && (
+          <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+            <strong>Rejected:</strong> {asset.rejectionReason}
+          </div>
+        )}
+
         {/* Description */}
         {asset.description && (
           <p className="text-sm text-gray-600 mb-3 line-clamp-2">
@@ -292,7 +300,12 @@ function AssetCardList({
             <div className="text-sm font-medium text-gray-900 truncate">
               {asset.title}
             </div>
-            {asset.description && (
+            {asset.status === AssetStatus.REJECTED && asset.rejectionReason && (
+              <div className="text-xs text-red-600 mt-1 truncate max-w-md">
+                <strong>Rejected:</strong> {asset.rejectionReason}
+              </div>
+            )}
+            {asset.description && asset.status !== AssetStatus.REJECTED && (
               <div className="text-sm text-gray-500 truncate max-w-md">
                 {asset.description}
               </div>

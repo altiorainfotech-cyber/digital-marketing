@@ -92,7 +92,7 @@ export const GET = withAuth(async (request, { user }) => {
               role: true,
             },
           },
-          company: {
+          Company: {
             select: {
               id: true,
               name: true,
@@ -163,7 +163,7 @@ export const GET = withAuth(async (request, { user }) => {
       status: asset.status,
       visibility: asset.visibility,
       companyId: asset.companyId,
-      company: asset.company,
+      company: asset.Company,
       uploaderId: asset.uploaderId,
       uploader: asset.uploader,
       storageUrl: asset.storageUrl,

@@ -148,8 +148,8 @@ function AssetUploadContent() {
   };
 
   const validateForm = (): string | null => {
-    if (!title.trim()) {
-      return 'Title is required';
+    if (!companyId) {
+      return 'Company is required';
     }
 
     if (assetType === AssetType.LINK && !url.trim()) {
@@ -158,19 +158,6 @@ function AssetUploadContent() {
 
     if (assetType !== AssetType.LINK && files.length === 0) {
       return 'At least one file is required';
-    }
-
-    if (uploadType === UploadType.SEO && !companyId) {
-      return 'Company is required for SEO/Digital marketing uploads';
-    }
-
-    const tagArray = tags.split(',').map(t => t.trim()).filter(t => t);
-    if (tagArray.length > 20) {
-      return 'Cannot have more than 20 tags';
-    }
-
-    if (description.length > 1000) {
-      return 'Description cannot exceed 1000 characters';
     }
 
     return null;
@@ -185,24 +172,17 @@ function AssetUploadContent() {
         f.id === filePreview.id ? { ...f, status: 'uploading', progress: 0 } : f
       ));
 
-      const tagArray = tags.split(',').map(t => t.trim()).filter(t => t);
-      const platformArray = targetPlatforms.split(',').map(p => p.trim()).filter(p => p);
-
       // Step 1: Get presigned URL
       const presignResponse = await fetch('/api/assets/presign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title,
-          description: description || undefined,
-          tags: tagArray.length > 0 ? tagArray : undefined,
+          title: title || file.name, // Use filename if title is empty
           assetType,
           uploadType,
-          companyId: companyId || undefined,
+          companyId,
           fileName: file.name,
           contentType: file.type,
-          targetPlatforms: platformArray.length > 0 ? platformArray : undefined,
-          campaignName: campaignName || undefined,
           visibility: isAdmin && visibility ? visibility : undefined,
         }),
       });
@@ -240,7 +220,8 @@ function AssetUploadContent() {
           xhr.addEventListener('abort', () => reject(new Error('Upload aborted')));
 
           xhr.open('PUT', uploadUrl);
-          xhr.setRequestHeader('Content-Type', file.type);
+          // Don't set Content-Type header - it's already in the presigned URL signature
+          // Setting it manually triggers CORS preflight which requires additional R2 configuration
           xhr.send(file);
         });
       }
@@ -292,22 +273,15 @@ function AssetUploadContent() {
     try {
       // For LINK type, create asset directly
       if (assetType === AssetType.LINK) {
-        const tagArray = tags.split(',').map(t => t.trim()).filter(t => t);
-        const platformArray = targetPlatforms.split(',').map(p => p.trim()).filter(p => p);
-
         const response = await fetch('/api/assets', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            title,
-            description: description || undefined,
-            tags: tagArray.length > 0 ? tagArray : undefined,
+            title: title || 'Untitled Link', // Use default if title is empty
             assetType,
             uploadType,
-            companyId: companyId || undefined,
+            companyId,
             url,
-            targetPlatforms: platformArray.length > 0 ? platformArray : undefined,
-            campaignName: campaignName || undefined,
             submitForReview: uploadType === UploadType.SEO ? submitForReview : undefined,
             visibility: isAdmin && visibility ? visibility : undefined,
           }),
@@ -342,7 +316,7 @@ function AssetUploadContent() {
 
   const getMicrocopy = () => {
     if (uploadType === UploadType.SEO) {
-      return 'You must select a Company. This upload will be visible to Admin for review. Admin will decide if/when this content is shared with SEO Specialists or the Company.';
+      return 'This upload will be visible to Admin for review. Admin will decide if/when this content is shared with SEO Specialists or the Company.';
     } else {
       return "This file will be private to you only. Admin and other users won't see it unless you explicitly share it.";
     }
@@ -449,99 +423,36 @@ function AssetUploadContent() {
               />
             </div>
 
-            {/* Title */}
+            {/* Company - Required for all users */}
+            <div className="mb-6">
+              {loadingCompanies ? (
+                <div className="text-sm text-gray-500">Loading companies...</div>
+              ) : (
+                <Select
+                  label="Company"
+                  value={companyId}
+                  onChange={(e) => setCompanyId(e.target.value)}
+                  options={[
+                    { value: '', label: 'Select a company' },
+                    ...companies.map(c => ({ value: c.id, label: c.name })),
+                  ]}
+                  fullWidth
+                  required
+                />
+              )}
+            </div>
+
+            {/* Title - Optional */}
             <div className="mb-6">
               <Input
-                label="Title"
+                label="Title (optional)"
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Enter asset title"
                 fullWidth
-                required
               />
             </div>
-
-            {/* Company (SEO mode only) */}
-            {uploadType === UploadType.SEO && (
-              <div className="mb-6">
-                {loadingCompanies ? (
-                  <div className="text-sm text-gray-500">Loading companies...</div>
-                ) : (
-                  <Select
-                    label="Company"
-                    value={companyId}
-                    onChange={(e) => setCompanyId(e.target.value)}
-                    options={[
-                      { value: '', label: 'Select a company' },
-                      ...companies.map(c => ({ value: c.id, label: c.name })),
-                    ]}
-                    fullWidth
-                    required
-                  />
-                )}
-              </div>
-            )}
-
-            {/* Description */}
-            <div className="mb-6">
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                Description (optional)
-              </label>
-              <textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={4}
-                maxLength={1000}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter asset description"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                {description.length}/1000 characters
-              </p>
-            </div>
-
-            {/* Tags */}
-            <div className="mb-6">
-              <Input
-                label="Tags (optional)"
-                type="text"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                placeholder="Enter tags separated by commas (max 20)"
-                helperText="Separate tags with commas. Maximum 20 tags."
-                fullWidth
-              />
-            </div>
-
-            {/* Target Platforms (SEO mode only) */}
-            {uploadType === UploadType.SEO && (
-              <div className="mb-6">
-                <Input
-                  label="Target Platforms (optional)"
-                  type="text"
-                  value={targetPlatforms}
-                  onChange={(e) => setTargetPlatforms(e.target.value)}
-                  placeholder="e.g., X, LinkedIn, Instagram"
-                  fullWidth
-                />
-              </div>
-            )}
-
-            {/* Campaign Name (SEO mode only) */}
-            {uploadType === UploadType.SEO && (
-              <div className="mb-6">
-                <Input
-                  label="Campaign Name (optional)"
-                  type="text"
-                  value={campaignName}
-                  onChange={(e) => setCampaignName(e.target.value)}
-                  placeholder="Enter campaign name"
-                  fullWidth
-                />
-              </div>
-            )}
 
             {/* Visibility (Admin only, SEO mode) */}
             {isAdmin && uploadType === UploadType.SEO && (
