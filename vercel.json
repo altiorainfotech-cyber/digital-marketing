@@ -1,0 +1,17 @@
+{
+  "buildCommand": "prisma generate && next build",
+  "env": {
+    "NEXTAUTH_URL": "https://your-app.vercel.app"
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, must-revalidate"
+        }
+      ]
+    }
+  ]
+}

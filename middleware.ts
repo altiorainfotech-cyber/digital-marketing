@@ -12,17 +12,33 @@ import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Public paths that don't require authentication
+  const publicPaths = [
+    '/auth/signin',
+    '/auth/error',
+    '/auth/activate',
+    '/auth/bypass',
+    '/test-auth',
+    '/',
+  ];
+
+  // Check if current path is public
+  const isPublicPath = publicPaths.some(path => pathname.startsWith(path));
+  
+  if (isPublicPath) {
+    return NextResponse.next();
+  }
+
+  // Get token for protected routes
   const token = await getToken({ 
     req: request as any,
     secret: process.env.NEXTAUTH_SECRET 
   });
 
-  const { pathname } = request.nextUrl;
-
-  // Allow requests if:
-  // 1. It's a request for next-auth session or provider
-  // 2. The token exists (user is authenticated)
-  if (pathname.startsWith('/api/auth') || token) {
+  // Allow requests if token exists (user is authenticated)
+  if (token) {
     return NextResponse.next();
   }
 
