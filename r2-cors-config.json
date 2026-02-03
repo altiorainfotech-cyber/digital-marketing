@@ -3,7 +3,7 @@
     "AllowedOrigins": [
       "http://localhost:3000",
       "http://localhost:3001",
-      "https://your-production-domain.com"
+      "https://digital-marketing-ten-alpha.vercel.app"
     ],
     "AllowedMethods": [
       "GET",
@@ -16,7 +16,9 @@
       "*"
     ],
     "ExposeHeaders": [
-      "ETag"
+      "ETag",
+      "Content-Length",
+      "Content-Type"
     ],
     "MaxAgeSeconds": 3600
   }

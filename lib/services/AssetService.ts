@@ -698,12 +698,31 @@ export class AssetService {
       uploaderId: asset.uploaderId,
       uploader: asset.uploader,
       storageUrl: asset.storageUrl,
+      thumbnailUrl: this.getThumbnailUrl(asset.storageUrl, asset.assetType),
       fileSize: asset.fileSize || undefined,
       mimeType: asset.mimeType || undefined,
       uploadedAt: asset.uploadedAt,
       targetPlatforms: asset.targetPlatforms || [],
       campaignName: asset.campaignName || undefined,
     })) as any;
+  }
+
+  /**
+   * Get thumbnail URL for an asset
+   * For images, returns the public URL
+   */
+  private getThumbnailUrl(storageUrl: string, assetType: string): string | undefined {
+    if (assetType === 'IMAGE' && storageUrl.startsWith('r2://')) {
+      const r2PublicUrl = process.env.R2_PUBLIC_URL;
+      if (!r2PublicUrl) return undefined;
+      
+      const match = storageUrl.match(/^r2:\/\/[^/]+\/(.+)$/);
+      if (match) {
+        const key = match[1];
+        return `${r2PublicUrl}/${key}`;
+      }
+    }
+    return undefined;
   }
 
   /**

@@ -217,6 +217,7 @@ export interface StorageConfig {
   r2AccessKeyId: string;
   r2SecretAccessKey: string;
   r2BucketName: string;
+  r2PublicUrl?: string;
   streamAccountId: string;
   streamApiToken: string;
   imagesAccountId: string;

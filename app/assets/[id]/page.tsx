@@ -105,6 +105,7 @@ function AssetDetailContent() {
   const assetId = params?.id as string;
 
   const [asset, setAsset] = useState<Asset | null>(null);
+  const [publicUrl, setPublicUrl] = useState<string>('');
   const [usages, setUsages] = useState<PlatformUsage[]>([]);
   const [downloads, setDownloads] = useState<Download[]>([]);
   const [versions, setVersions] = useState<Version[]>([]);
@@ -146,6 +147,19 @@ function AssetDetailContent() {
 
         const data = await response.json();
         setAsset(data);
+
+        // Fetch public URL for images and videos
+        if (data.assetType === AssetType.IMAGE || data.assetType === AssetType.VIDEO) {
+          try {
+            const urlResponse = await fetch(`/api/assets/${assetId}/public-url`);
+            if (urlResponse.ok) {
+              const urlData = await urlResponse.json();
+              setPublicUrl(urlData.publicUrl);
+            }
+          } catch (err) {
+            console.error('Failed to load public URL:', err);
+          }
+        }
       } catch (err: any) {
         setError(err.message || 'Failed to load asset');
       } finally {
@@ -410,18 +424,27 @@ function AssetDetailContent() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Preview</h2>
               <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg aspect-video flex items-center justify-center">
-                {asset.assetType === AssetType.IMAGE && asset.storageUrl ? (
+                {asset.assetType === AssetType.IMAGE && publicUrl ? (
                   <img
-                    src={asset.storageUrl}
+                    src={publicUrl}
                     alt={asset.title}
                     className="w-full h-full object-contain rounded-lg"
+                    onError={(e) => {
+                      console.error('Image failed to load:', publicUrl);
+                      e.currentTarget.style.display = 'none';
+                    }}
                   />
-                ) : asset.assetType === AssetType.VIDEO && asset.storageUrl ? (
+                ) : asset.assetType === AssetType.VIDEO && publicUrl ? (
                   <video
-                    src={asset.storageUrl}
+                    src={publicUrl}
                     controls
                     className="w-full h-full rounded-lg"
-                  />
+                    onError={(e) => {
+                      console.error('Video failed to load:', publicUrl);
+                    }}
+                  >
+                    Your browser does not support the video tag.
+                  </video>
                 ) : asset.assetType === AssetType.LINK ? (
                   <div className="text-center">
                     <Eye className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -438,7 +461,9 @@ function AssetDetailContent() {
                 ) : (
                   <div className="text-center">
                     <FileType className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">Document Preview Not Available</p>
+                    <p className="text-gray-600">
+                      {publicUrl ? 'Loading preview...' : 'Preview not available'}
+                    </p>
                   </div>
                 )}
               </div>
