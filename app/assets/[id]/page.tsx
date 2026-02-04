@@ -154,7 +154,14 @@ function AssetDetailContent() {
             const urlResponse = await fetch(`/api/assets/${assetId}/public-url`);
             if (urlResponse.ok) {
               const urlData = await urlResponse.json();
-              setPublicUrl(urlData.publicUrl);
+              console.log('Public URL fetched:', urlData.publicUrl);
+              if (urlData.publicUrl) {
+                setPublicUrl(urlData.publicUrl);
+              } else {
+                console.warn('Public URL is empty - check R2_PUBLIC_URL environment variable');
+              }
+            } else {
+              console.error('Failed to fetch public URL:', urlResponse.status);
             }
           } catch (err) {
             console.error('Failed to load public URL:', err);
@@ -424,27 +431,70 @@ function AssetDetailContent() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Preview</h2>
               <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg aspect-video flex items-center justify-center">
-                {asset.assetType === AssetType.IMAGE && publicUrl ? (
-                  <img
-                    src={publicUrl}
-                    alt={asset.title}
-                    className="w-full h-full object-contain rounded-lg"
-                    onError={(e) => {
-                      console.error('Image failed to load:', publicUrl);
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                ) : asset.assetType === AssetType.VIDEO && publicUrl ? (
-                  <video
-                    src={publicUrl}
-                    controls
-                    className="w-full h-full rounded-lg"
-                    onError={(e) => {
-                      console.error('Video failed to load:', publicUrl);
-                    }}
-                  >
-                    Your browser does not support the video tag.
-                  </video>
+                {asset.assetType === AssetType.IMAGE ? (
+                  publicUrl ? (
+                    <img
+                      src={publicUrl}
+                      alt={asset.title}
+                      className="w-full h-full object-contain rounded-lg"
+                      onError={(e) => {
+                        console.error('Image failed to load:', publicUrl);
+                        const target = e.currentTarget;
+                        target.style.display = 'none';
+                        const parent = target.parentElement;
+                        if (parent) {
+                          parent.innerHTML = `
+                            <div class="text-center p-4">
+                              <svg class="w-16 h-16 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                              </svg>
+                              <p class="text-gray-600 mb-2">Failed to load image</p>
+                              <p class="text-xs text-gray-500">Check R2 bucket CORS and public access settings</p>
+                            </div>
+                          `;
+                        }
+                      }}
+                    />
+                  ) : (
+                    <div className="text-center p-4">
+                      <FileType className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600 mb-2">Image preview not available</p>
+                      <p className="text-xs text-gray-500">R2_PUBLIC_URL may not be configured</p>
+                    </div>
+                  )
+                ) : asset.assetType === AssetType.VIDEO ? (
+                  publicUrl ? (
+                    <video
+                      src={publicUrl}
+                      controls
+                      className="w-full h-full rounded-lg"
+                      onError={(e) => {
+                        console.error('Video failed to load:', publicUrl);
+                        const target = e.currentTarget;
+                        target.style.display = 'none';
+                        const parent = target.parentElement;
+                        if (parent) {
+                          parent.innerHTML = `
+                            <div class="text-center p-4">
+                              <svg class="w-16 h-16 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                              </svg>
+                              <p class="text-gray-600 mb-2">Failed to load video</p>
+                              <p class="text-xs text-gray-500">Check R2 bucket CORS and public access settings</p>
+                            </div>
+                          `;
+                        }
+                      }}
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                  ) : (
+                    <div className="text-center p-4">
+                      <FileType className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600 mb-2">Video preview not available</p>
+                      <p className="text-xs text-gray-500">R2_PUBLIC_URL may not be configured</p>
+                    </div>
+                  )
                 ) : asset.assetType === AssetType.LINK ? (
                   <div className="text-center">
                     <Eye className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -461,9 +511,8 @@ function AssetDetailContent() {
                 ) : (
                   <div className="text-center">
                     <FileType className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">
-                      {publicUrl ? 'Loading preview...' : 'Preview not available'}
-                    </p>
+                    <p className="text-gray-600">Document Asset</p>
+                    <p className="text-xs text-gray-500 mt-2">Use download button to view</p>
                   </div>
                 )}
               </div>

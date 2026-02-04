@@ -194,9 +194,9 @@ export class UploadHandler {
   private generateStorageUrl(assetId: string, assetType: AssetType): string {
     switch (assetType) {
       case AssetType.IMAGE:
-        return `images://${this.config.imagesAccountId}/${assetId}`;
+        return `r2://${this.config.r2BucketName}/images/${assetId}`;
       case AssetType.VIDEO:
-        return `stream://${this.config.streamAccountId}/${assetId}`;
+        return `r2://${this.config.r2BucketName}/videos/${assetId}`;
       case AssetType.DOCUMENT:
         return `r2://${this.config.r2BucketName}/documents/${assetId}`;
       case AssetType.LINK:

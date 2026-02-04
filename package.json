@@ -22,6 +22,7 @@
     "db:studio": "prisma studio",
     "validate:env": "npx tsx scripts/validate-env.ts",
     "validate:env:prod": "npx tsx scripts/validate-env.ts --production",
+    "check:r2": "npx tsx scripts/check-r2-config.ts",
     "deploy:check": "npm run validate:env:prod && npm run lint && npm run test && npm run build",
     "pre-deploy": "bash scripts/pre-deploy.sh"
   },
