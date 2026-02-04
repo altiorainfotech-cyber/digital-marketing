@@ -24,7 +24,8 @@ import {
   FileVideo, 
   FileText, 
   Link as LinkIcon,
-  X
+  X,
+  Eye
 } from 'lucide-react';
 
 interface Asset {
@@ -70,9 +71,40 @@ function PendingApprovalsContent() {
   const [filterType, setFilterType] = useState<string>('');
   const [filterCompany, setFilterCompany] = useState<string>('');
 
+  // Asset preview URLs
+  const [assetPreviewUrls, setAssetPreviewUrls] = useState<Record<string, string>>({});
+
   useEffect(() => {
     fetchPendingAssets();
   }, []);
+
+  // Fetch preview URLs for assets
+  useEffect(() => {
+    const fetchPreviewUrls = async () => {
+      const urls: Record<string, string> = {};
+      
+      for (const asset of filteredAssets) {
+        // Only fetch preview URLs for images and videos
+        if (asset.assetType === AssetType.IMAGE || asset.assetType === AssetType.VIDEO) {
+          try {
+            const response = await fetch(`/api/assets/${asset.id}/public-url`);
+            if (response.ok) {
+              const data = await response.json();
+              urls[asset.id] = data.publicUrl;
+            }
+          } catch (err) {
+            console.error(`Failed to fetch preview URL for asset ${asset.id}:`, err);
+          }
+        }
+      }
+      
+      setAssetPreviewUrls(urls);
+    };
+
+    if (filteredAssets.length > 0) {
+      fetchPreviewUrls();
+    }
+  }, [filteredAssets]);
 
   // Apply filters
   useEffect(() => {
@@ -267,6 +299,89 @@ function PendingApprovalsContent() {
     }
   };
 
+  const renderAssetPreview = (asset: Asset) => {
+    const previewUrl = assetPreviewUrls[asset.id];
+
+    if (asset.assetType === AssetType.IMAGE && previewUrl) {
+      return (
+        <div className="relative w-full h-48 bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-900 rounded-lg overflow-hidden mb-3">
+          <img
+            src={previewUrl}
+            alt={asset.title}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              const parent = e.currentTarget.parentElement;
+              if (parent) {
+                parent.innerHTML = `
+                  <div class="flex items-center justify-center h-full">
+                    <div class="text-center">
+                      <svg class="w-12 h-12 text-neutral-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <p class="text-xs text-neutral-500">Preview unavailable</p>
+                    </div>
+                  </div>
+                `;
+              }
+            }}
+          />
+        </div>
+      );
+    }
+
+    if (asset.assetType === AssetType.VIDEO && previewUrl) {
+      return (
+        <div className="relative w-full h-48 bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-900 rounded-lg overflow-hidden mb-3">
+          <video
+            src={previewUrl}
+            className="w-full h-full object-cover"
+            muted
+            playsInline
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              const parent = e.currentTarget.parentElement;
+              if (parent) {
+                parent.innerHTML = `
+                  <div class="flex items-center justify-center h-full">
+                    <div class="text-center">
+                      <svg class="w-12 h-12 text-neutral-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      <p class="text-xs text-neutral-500">Preview unavailable</p>
+                    </div>
+                  </div>
+                `;
+              }
+            }}
+          />
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
+            <div className="w-12 h-12 rounded-full bg-white bg-opacity-90 flex items-center justify-center">
+              <FileVideo className="w-6 h-6 text-neutral-700" />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Fallback for documents, links, or when preview is not available
+    return (
+      <div className="relative w-full h-48 bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-900 rounded-lg overflow-hidden mb-3 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-neutral-400 dark:text-neutral-500 mb-2">
+            {getAssetTypeIcon(asset.assetType)}
+          </div>
+          <p className="text-sm text-neutral-600 dark:text-neutral-400 font-medium">
+            {asset.assetType}
+          </p>
+          <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">
+            Click "View Asset" for details
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   const visibilityOptions: SelectOption[] = [
     { value: VisibilityLevel.UPLOADER_ONLY, label: 'Private (Uploader Only)' },
     { value: VisibilityLevel.PUBLIC, label: 'Public (Everyone)' },
@@ -433,6 +548,9 @@ function PendingApprovalsContent() {
 
                 {/* Content */}
                 <div className="p-4">
+                  {/* Asset Preview Thumbnail */}
+                  {renderAssetPreview(asset)}
+
                   <div className="flex items-start gap-3 mb-3">
                     <div className="text-primary-600 dark:text-primary-400">
                       {getAssetTypeIcon(asset.assetType)}
@@ -487,25 +605,36 @@ function PendingApprovalsContent() {
                   )}
 
                   {/* Actions */}
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2">
                     <Button
-                      variant="primary"
+                      variant="ghost"
                       size="sm"
-                      icon={<CheckCircle className="w-4 h-4" />}
-                      onClick={() => openApprovalModal(asset)}
+                      icon={<Eye className="w-4 h-4" />}
+                      onClick={() => router.push(`/assets/${asset.id}`)}
                       fullWidth
                     >
-                      Approve
+                      View Asset
                     </Button>
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      icon={<XCircle className="w-4 h-4" />}
-                      onClick={() => openRejectionModal(asset)}
-                      fullWidth
-                    >
-                      Reject
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        icon={<CheckCircle className="w-4 h-4" />}
+                        onClick={() => openApprovalModal(asset)}
+                        fullWidth
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        icon={<XCircle className="w-4 h-4" />}
+                        onClick={() => openRejectionModal(asset)}
+                        fullWidth
+                      >
+                        Reject
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>

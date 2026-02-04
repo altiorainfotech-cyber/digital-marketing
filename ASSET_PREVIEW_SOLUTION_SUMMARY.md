@@ -5,6 +5,7 @@ Admin users cannot see images and videos of pending assets before approving them
 ```
 Video failed to load: "stream:///cml6j3yn40000ntou6entofg9"
 ```
+
 ## Root Cause
 Assets are stored in Cloudflare R2 with private storage URLs (format: `r2://bucket/key`). To display them in the browser, they need to be converted to public HTTP URLs. This requires:
 

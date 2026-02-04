@@ -21,38 +21,38 @@ model Approval {
 }
 
 model Asset {
-  id                            String          @id @default(cuid())
-  title                         String
-  description                   String?
-  tags                          String[]
-  assetType                     AssetType
-  uploadType                    UploadType
-  status                        AssetStatus     @default(DRAFT)
-  visibility                    VisibilityLevel @default(UPLOADER_ONLY)
-  allowedRole                   UserRole?
-  companyId                     String?
-  uploaderId                    String
-  storageUrl                    String
-  fileSize                      Int?
-  mimeType                      String?
-  uploadedAt                    DateTime        @default(now())
-  approvedAt                    DateTime?
-  approvedById                  String?
-  rejectedAt                    DateTime?
-  rejectedById                  String?
-  rejectionReason               String?
-  targetPlatforms               String[]
-  campaignName                  String?
-  Approval                      Approval[]
-  approvedBy                    User?           @relation("Asset_approvedByIdToUser", fields: [approvedById], references: [id])
-  Company                       Company?        @relation(fields: [companyId], references: [id])
-  rejectedBy                    User?           @relation("Asset_rejectedByIdToUser", fields: [rejectedById], references: [id])
-  uploader                      User            @relation("Asset_uploaderIdToUser", fields: [uploaderId], references: [id])
-  AssetDownload                 AssetDownload[]
-  AssetShare                    AssetShare[]
-  AssetVersion                  AssetVersion[]
-  AuditLog                      AuditLog[]
-  PlatformUsage                 PlatformUsage[]
+  id              String          @id @default(cuid())
+  title           String
+  description     String?
+  tags            String[]
+  assetType       AssetType
+  uploadType      UploadType
+  status          AssetStatus     @default(DRAFT)
+  visibility      VisibilityLevel @default(UPLOADER_ONLY)
+  companyId       String?
+  uploaderId      String
+  storageUrl      String
+  fileSize        Int?
+  mimeType        String?
+  uploadedAt      DateTime        @default(now())
+  approvedAt      DateTime?
+  approvedById    String?
+  rejectedAt      DateTime?
+  rejectedById    String?
+  rejectionReason String?
+  targetPlatforms String[]
+  campaignName    String?
+  allowedRole     UserRole?
+  Approval        Approval[]
+  approvedBy      User?           @relation("Asset_approvedByIdToUser", fields: [approvedById], references: [id])
+  Company         Company?        @relation(fields: [companyId], references: [id])
+  rejectedBy      User?           @relation("Asset_rejectedByIdToUser", fields: [rejectedById], references: [id])
+  uploader        User            @relation("Asset_uploaderIdToUser", fields: [uploaderId], references: [id])
+  AssetDownload   AssetDownload[]
+  AssetShare      AssetShare[]
+  AssetVersion    AssetVersion[]
+  AuditLog        AuditLog[]
+  PlatformUsage   PlatformUsage[]
 
   @@index([companyId])
   @@index([status])
@@ -74,16 +74,16 @@ model AssetDownload {
 }
 
 model AssetShare {
-  id                                 String   @id @default(cuid())
-  assetId                            String
-  sharedById                         String
-  sharedWithId                       String
-  targetType                         String?
-  targetId                           String?
-  createdAt                          DateTime @default(now())
-  Asset                              Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
-  sharedBy                           User     @relation("AssetShare_sharedByIdToUser", fields: [sharedById], references: [id])
-  sharedWith                         User     @relation("AssetShare_sharedWithIdToUser", fields: [sharedWithId], references: [id])
+  id           String   @id @default(cuid())
+  assetId      String
+  sharedById   String
+  sharedWithId String
+  targetType   String?
+  targetId     String?
+  createdAt    DateTime @default(now())
+  Asset        Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  sharedBy     User     @relation("AssetShare_sharedByIdToUser", fields: [sharedById], references: [id])
+  sharedWith   User     @relation("AssetShare_sharedWithIdToUser", fields: [sharedWithId], references: [id])
 
   @@unique([assetId, sharedWithId])
   @@index([assetId])
@@ -166,32 +166,32 @@ model PlatformUsage {
 }
 
 model User {
-  id                                       String          @id @default(cuid())
-  email                                    String          @unique
-  name                                     String
-  password                                 String?
-  role                                     UserRole
-  companyId                                String?
-  createdAt                                DateTime        @default(now())
-  updatedAt                                DateTime        @updatedAt
-  activatedAt                              DateTime?
-  activationCode                           String?         @unique
-  activationCodeExpiresAt                  DateTime?
-  isActivated                              Boolean         @default(false)
-  deactivatedAt                            DateTime?
-  deactivatedBy                            String?
-  isActive                                 Boolean         @default(true)
-  Approval                                 Approval[]
-  assetsApproved                           Asset[]         @relation("Asset_approvedByIdToUser")
-  assetsRejected                           Asset[]         @relation("Asset_rejectedByIdToUser")
-  assetsUploaded                           Asset[]         @relation("Asset_uploaderIdToUser")
-  AssetDownload                            AssetDownload[]
-  assetSharesCreated                       AssetShare[]    @relation("AssetShare_sharedByIdToUser")
-  assetSharesReceived                      AssetShare[]    @relation("AssetShare_sharedWithIdToUser")
-  AuditLog                                 AuditLog[]
-  Notification                             Notification[]
-  PlatformUsage                            PlatformUsage[]
-  Company                                  Company?        @relation(fields: [companyId], references: [id])
+  id                      String          @id @default(cuid())
+  email                   String          @unique
+  name                    String
+  password                String?
+  role                    UserRole
+  companyId               String?
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+  activatedAt             DateTime?
+  activationCode          String?         @unique
+  activationCodeExpiresAt DateTime?
+  isActivated             Boolean         @default(false)
+  deactivatedAt           DateTime?
+  deactivatedBy           String?
+  isActive                Boolean         @default(true)
+  Approval                Approval[]
+  assetsApproved          Asset[]         @relation("Asset_approvedByIdToUser")
+  assetsRejected          Asset[]         @relation("Asset_rejectedByIdToUser")
+  assetsUploaded          Asset[]         @relation("Asset_uploaderIdToUser")
+  AssetDownload           AssetDownload[]
+  assetSharesCreated      AssetShare[]    @relation("AssetShare_sharedByIdToUser")
+  assetSharesReceived     AssetShare[]    @relation("AssetShare_sharedWithIdToUser")
+  AuditLog                AuditLog[]
+  Notification            Notification[]
+  PlatformUsage           PlatformUsage[]
+  Company                 Company?        @relation(fields: [companyId], references: [id])
 }
 
 enum ApprovalAction {

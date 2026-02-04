@@ -240,7 +240,7 @@ export class VisibilityChecker {
    * Role-based filtering rules:
    * - Content_Creator: Own uploads (all statuses) + explicitly shared assets
    * - SEO_Specialist: Own uploads (all statuses) + APPROVED assets they have permission to see
-   * - Admin: All SEO assets, but not UPLOADER_ONLY Doc assets unless explicitly shared
+   * - Admin: ALL assets regardless of type, status, or visibility (full admin access)
    * 
    * Requirements: 7.1, 7.2, 7.3
    * 
@@ -252,6 +252,12 @@ export class VisibilityChecker {
     const filteredAssets: Asset[] = [];
 
     for (const asset of assets) {
+      // Admin can see ALL assets (full access)
+      if (user.role === UserRole.ADMIN) {
+        filteredAssets.push(asset);
+        continue;
+      }
+
       // Users can ALWAYS see their own uploads regardless of status
       if (asset.uploaderId === user.id) {
         filteredAssets.push(asset);
@@ -273,16 +279,6 @@ export class VisibilityChecker {
         // SEO_Specialist: Own uploads (already handled above) + Only APPROVED assets they have permission to see
         if (asset.status === AssetStatus.APPROVED) {
           filteredAssets.push(asset);
-        }
-      } else if (user.role === UserRole.ADMIN) {
-        // Admin: All SEO assets, but not UPLOADER_ONLY Doc assets unless explicitly shared
-        if (asset.uploadType === 'SEO') {
-          filteredAssets.push(asset);
-        } else if (asset.uploadType === 'DOC') {
-          // Only include Doc assets if Admin is uploader (already handled above) or has explicit share
-          if (asset.visibility !== 'UPLOADER_ONLY') {
-            filteredAssets.push(asset);
-          }
         }
       }
     }

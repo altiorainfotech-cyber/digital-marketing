@@ -1,0 +1,27 @@
+{
+  "rules": [
+    {
+      "allowed_origins": [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "https://digital-marketing-ten-alpha.vercel.app"
+      ],
+      "allowed_methods": [
+        "GET",
+        "PUT",
+        "POST",
+        "DELETE",
+        "HEAD"
+      ],
+      "allowed_headers": [
+        "*"
+      ],
+      "expose_headers": [
+        "ETag",
+        "Content-Length",
+        "Content-Type"
+      ],
+      "max_age_seconds": 3600
+    }
+  ]
+}
