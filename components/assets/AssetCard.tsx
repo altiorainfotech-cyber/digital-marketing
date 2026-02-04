@@ -1,14 +1,14 @@
 /**
  * AssetCard Component
  * 
- * Displays asset information in grid or list view
+ * Displays asset information in grid or list view with preview thumbnails
  * 
  * Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.9, 6.10
  */
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge } from '@/lib/design-system/components/primitives/Badge';
 import { Checkbox } from '@/lib/design-system/components/primitives/Checkbox';
@@ -106,6 +106,83 @@ function formatDate(dateString: string): string {
 }
 
 /**
+ * Render asset preview thumbnail
+ */
+function AssetPreview({ asset, previewUrl }: { asset: AssetCardData; previewUrl?: string }) {
+  if (asset.assetType === AssetType.IMAGE && previewUrl) {
+    return (
+      <img
+        src={previewUrl}
+        alt={asset.title}
+        className="w-full h-full object-cover"
+        onError={(e) => {
+          e.currentTarget.style.display = 'none';
+          const parent = e.currentTarget.parentElement;
+          if (parent) {
+            parent.innerHTML = `
+              <div class="flex items-center justify-center h-full">
+                <div class="text-center">
+                  <svg class="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p class="text-xs text-gray-500">Preview unavailable</p>
+                </div>
+              </div>
+            `;
+          }
+        }}
+      />
+    );
+  }
+
+  if (asset.assetType === AssetType.VIDEO && previewUrl) {
+    return (
+      <>
+        <video
+          src={previewUrl}
+          className="w-full h-full object-cover"
+          muted
+          playsInline
+          onError={(e) => {
+            e.currentTarget.style.display = 'none';
+            const parent = e.currentTarget.parentElement;
+            if (parent) {
+              parent.innerHTML = `
+                <div class="flex items-center justify-center h-full">
+                  <div class="text-center">
+                    <svg class="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <p class="text-xs text-gray-500">Preview unavailable</p>
+                  </div>
+                </div>
+              `;
+            }
+          }}
+        />
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="w-16 h-16 rounded-full bg-black bg-opacity-50 flex items-center justify-center">
+            <FileVideo className="w-8 h-8 text-white" />
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Fallback for documents, links, or when preview is not available
+  return (
+    <div className="flex items-center justify-center h-full">
+      <div className="text-center">
+        <div className="text-blue-600 mb-2">
+          {getAssetTypeIcon(asset.assetType)}
+        </div>
+        <p className="text-sm text-gray-600 font-medium">{asset.assetType}</p>
+      </div>
+    </div>
+  );
+}
+
+/**
  * AssetCard - Grid View
  */
 function AssetCardGrid({ 
@@ -117,6 +194,30 @@ function AssetCardGrid({
 }: AssetCardProps) {
   const router = useRouter();
   const [showActions, setShowActions] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | undefined>(undefined);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
+  // Fetch preview URL for images and videos
+  useEffect(() => {
+    const fetchPreviewUrl = async () => {
+      if (asset.assetType === AssetType.IMAGE || asset.assetType === AssetType.VIDEO) {
+        setLoadingPreview(true);
+        try {
+          const response = await fetch(`/api/assets/${asset.id}/public-url`);
+          if (response.ok) {
+            const data = await response.json();
+            setPreviewUrl(data.publicUrl);
+          }
+        } catch (err) {
+          console.error(`Failed to fetch preview URL for asset ${asset.id}:`, err);
+        } finally {
+          setLoadingPreview(false);
+        }
+      }
+    };
+
+    fetchPreviewUrl();
+  }, [asset.id, asset.assetType]);
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't navigate if clicking checkbox or action buttons
@@ -124,6 +225,33 @@ function AssetCardGrid({
       return;
     }
     router.push(`/assets/${asset.id}`);
+  };
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const response = await fetch(`/api/assets/${asset.id}/download`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to generate download URL' }));
+        throw new Error(errorData.error || errorData.details || 'Failed to generate download URL');
+      }
+
+      const data = await response.json();
+      
+      if (!data.downloadUrl) {
+        throw new Error('No download URL received from server');
+      }
+      
+      window.open(data.downloadUrl, '_blank');
+    } catch (err: any) {
+      console.error('Download error:', err);
+      alert(err.message || 'Failed to download asset');
+    }
   };
 
   return (
@@ -147,18 +275,14 @@ function AssetCardGrid({
         </div>
       )}
 
-      {/* Thumbnail or Icon */}
-      <div className="relative h-48 bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
-        {asset.thumbnailUrl ? (
-          <img
-            src={asset.thumbnailUrl}
-            alt={asset.title}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="text-blue-600">
-            {getAssetTypeIcon(asset.assetType)}
+      {/* Thumbnail or Icon with Preview */}
+      <div className="relative h-48 bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center overflow-hidden">
+        {loadingPreview ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
+        ) : (
+          <AssetPreview asset={asset} previewUrl={previewUrl} />
         )}
 
         {/* Hover Overlay with Quick Actions */}
@@ -180,10 +304,7 @@ function AssetCardGrid({
               size="sm"
               variant="secondary"
               icon={<Download className="w-4 h-4" />}
-              onClick={(e) => {
-                e.stopPropagation();
-                onQuickAction?.('download', asset.id);
-              }}
+              onClick={handleDownload}
               aria-label="Download asset"
             >
               Download
@@ -245,6 +366,19 @@ function AssetCardGrid({
           </div>
           <div>Uploaded: {formatDate(asset.uploadedAt)}</div>
           {asset.company && <div>Company: {asset.company.name}</div>}
+        </div>
+
+        {/* Direct Download Button */}
+        <div className="mt-3 pt-3 border-t border-gray-200">
+          <Button
+            size="sm"
+            variant="outline"
+            icon={<Download className="w-4 h-4" />}
+            onClick={handleDownload}
+            fullWidth
+          >
+            Download
+          </Button>
         </div>
       </div>
     </div>
