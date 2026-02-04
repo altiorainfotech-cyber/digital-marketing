@@ -27,15 +27,25 @@ export class StorageService {
   constructor(config: StorageConfig) {
     this.config = config;
     
+    // Validate required R2 configuration
+    if (!config.r2AccountId || !config.r2AccessKeyId || !config.r2SecretAccessKey || !config.r2BucketName) {
+      throw new Error('Missing required R2 configuration. Please check R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, and R2_BUCKET_NAME environment variables.');
+    }
+    
     // Initialize R2 client (S3-compatible)
-    this.r2Client = new S3Client({
-      region: 'auto',
-      endpoint: `https://${config.r2AccountId}.r2.cloudflarestorage.com`,
-      credentials: {
-        accessKeyId: config.r2AccessKeyId,
-        secretAccessKey: config.r2SecretAccessKey,
-      },
-    });
+    try {
+      this.r2Client = new S3Client({
+        region: 'auto',
+        endpoint: `https://${config.r2AccountId}.r2.cloudflarestorage.com`,
+        credentials: {
+          accessKeyId: config.r2AccessKeyId,
+          secretAccessKey: config.r2SecretAccessKey,
+        },
+      });
+    } catch (error: any) {
+      console.error('Error initializing R2 client:', error);
+      throw new Error(`Failed to initialize R2 storage client: ${error.message}`);
+    }
   }
 
   /**
@@ -177,17 +187,22 @@ export class StorageService {
   }
 
   private async generateR2SignedUrl(storageUrl: string, expiresIn: number): Promise<SignedUrlResponse> {
-    const key = this.extractR2Key(storageUrl);
+    try {
+      const key = this.extractR2Key(storageUrl);
 
-    const command = new GetObjectCommand({
-      Bucket: this.config.r2BucketName,
-      Key: key,
-    });
+      const command = new GetObjectCommand({
+        Bucket: this.config.r2BucketName,
+        Key: key,
+      });
 
-    const signedUrl = await getSignedUrl(this.r2Client, command, { expiresIn });
-    const expiresAt = new Date(Date.now() + expiresIn * 1000);
+      const signedUrl = await getSignedUrl(this.r2Client, command, { expiresIn });
+      const expiresAt = new Date(Date.now() + expiresIn * 1000);
 
-    return { signedUrl, expiresAt };
+      return { signedUrl, expiresAt };
+    } catch (error: any) {
+      console.error('Error generating R2 signed URL:', error);
+      throw new Error(`Failed to generate download URL: ${error.message}`);
+    }
   }
 
   private async deleteFromR2(storageUrl: string): Promise<void> {
@@ -456,19 +471,19 @@ export class StorageService {
   validateConfig(): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
 
-    // R2 validation
+    // R2 validation (required for all file types)
     if (!this.config.r2AccountId) errors.push('R2_ACCOUNT_ID is required');
     if (!this.config.r2AccessKeyId) errors.push('R2_ACCESS_KEY_ID is required');
     if (!this.config.r2SecretAccessKey) errors.push('R2_SECRET_ACCESS_KEY is required');
     if (!this.config.r2BucketName) errors.push('R2_BUCKET_NAME is required');
 
-    // Stream validation
-    if (!this.config.streamAccountId) errors.push('STREAM_ACCOUNT_ID is required');
-    if (!this.config.streamApiToken) errors.push('STREAM_API_TOKEN is required');
+    // Stream validation (optional - only needed if using Stream)
+    // if (!this.config.streamAccountId) errors.push('STREAM_ACCOUNT_ID is required');
+    // if (!this.config.streamApiToken) errors.push('STREAM_API_TOKEN is required');
 
-    // Images validation
-    if (!this.config.imagesAccountId) errors.push('IMAGES_ACCOUNT_ID is required');
-    if (!this.config.imagesApiToken) errors.push('IMAGES_API_TOKEN is required');
+    // Images validation (optional - only needed if using Images)
+    // if (!this.config.imagesAccountId) errors.push('IMAGES_ACCOUNT_ID is required');
+    // if (!this.config.imagesApiToken) errors.push('IMAGES_API_TOKEN is required');
 
     return {
       valid: errors.length === 0,

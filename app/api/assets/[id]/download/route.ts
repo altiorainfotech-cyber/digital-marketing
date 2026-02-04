@@ -122,6 +122,8 @@ export async function POST(
       const ipAddress = getIpAddress(request);
       const userAgent = getUserAgent(request);
 
+      console.log(`[Download] User ${user.id} requesting download for asset ${assetId}`);
+
       // Initiate download (generates signed URL and logs download)
       const downloadResponse = await downloadService.initiateDownload({
         assetId,
@@ -132,9 +134,11 @@ export async function POST(
         expiresIn: validExpiresIn,
       });
 
+      console.log(`[Download] Successfully generated download URL for asset ${assetId}`);
+
       return NextResponse.json(downloadResponse, { status: 200 });
     } catch (error: any) {
-      console.error('Error initiating download:', error);
+      console.error('[Download] Error initiating download:', error);
 
       // Handle specific error cases
       if (error.message.includes('not found')) {
@@ -162,7 +166,7 @@ export async function POST(
       }
 
       return NextResponse.json(
-        { error: 'Failed to initiate download' },
+        { error: 'Failed to initiate download', details: error.message },
         { status: 500 }
       );
     }

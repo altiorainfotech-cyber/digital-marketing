@@ -61,13 +61,14 @@ model Asset {
 }
 
 model AssetDownload {
-  id             String    @id @default(cuid())
+  id             String     @id @default(cuid())
   assetId        String
   downloadedById String
-  downloadedAt   DateTime  @default(now())
+  downloadedAt   DateTime   @default(now())
   platformIntent Platform?
-  Asset          Asset     @relation(fields: [assetId], references: [id], onDelete: Cascade)
-  User           User      @relation(fields: [downloadedById], references: [id])
+  platforms      Platform[] @default([])
+  Asset          Asset      @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  User           User       @relation(fields: [downloadedById], references: [id])
 
   @@index([assetId])
   @@index([downloadedById])
@@ -236,11 +237,15 @@ enum NotificationType {
 }
 
 enum Platform {
-  X
-  LINKEDIN
+  ADS
   INSTAGRAM
-  META_ADS
+  META
+  LINKEDIN
+  X
+  SEO
+  BLOGS
   YOUTUBE
+  SNAPCHAT
 }
 
 enum ResourceType {

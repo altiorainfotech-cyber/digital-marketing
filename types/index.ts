@@ -35,11 +35,15 @@ export enum VisibilityLevel {
 }
 
 export enum Platform {
-  X = 'X',
-  LINKEDIN = 'LINKEDIN',
+  ADS = 'ADS',
   INSTAGRAM = 'INSTAGRAM',
-  META_ADS = 'META_ADS',
-  YOUTUBE = 'YOUTUBE'
+  META = 'META',
+  LINKEDIN = 'LINKEDIN',
+  X = 'X',
+  SEO = 'SEO',
+  BLOGS = 'BLOGS',
+  YOUTUBE = 'YOUTUBE',
+  SNAPCHAT = 'SNAPCHAT'
 }
 
 export enum ApprovalAction {
@@ -175,11 +179,13 @@ export interface AssetDownload {
   downloadedById: string;
   downloadedAt: Date;
   platformIntent?: Platform;
+  platforms?: Platform[];
 }
 
 export interface DownloadRequest {
   assetId: string;
   platformIntent?: Platform;
+  platforms?: Platform[];
 }
 
 export interface DownloadResponse {
@@ -218,10 +224,10 @@ export interface StorageConfig {
   r2SecretAccessKey: string;
   r2BucketName: string;
   r2PublicUrl?: string;
-  streamAccountId: string;
-  streamApiToken: string;
-  imagesAccountId: string;
-  imagesApiToken: string;
+  streamAccountId?: string;
+  streamApiToken?: string;
+  imagesAccountId?: string;
+  imagesApiToken?: string;
 }
 
 export interface StorageUploadRequest {

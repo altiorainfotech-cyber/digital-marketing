@@ -75,84 +75,97 @@ export class DownloadService {
       expiresIn = 3600, // Default 1 hour
     } = params;
 
-    // Validate asset exists
-    const asset = await this.prisma.asset.findUnique({
-      where: { id: assetId },
-      select: {
-        id: true,
-        title: true,
-        assetType: true,
-        storageUrl: true,
-        uploaderId: true,
-      },
-    });
+    try {
+      // Validate asset exists
+      const asset = await this.prisma.asset.findUnique({
+        where: { id: assetId },
+        select: {
+          id: true,
+          title: true,
+          assetType: true,
+          storageUrl: true,
+          uploaderId: true,
+        },
+      });
 
-    if (!asset) {
-      throw new Error('Asset not found');
-    }
+      if (!asset) {
+        throw new Error('Asset not found');
+      }
 
-    // Validate user exists
-    const user = await this.prisma.user.findUnique({
-      where: { id: downloadedById },
-      select: {
-        id: true,
-        name: true,
-        role: true,
-      },
-    });
+      if (!asset.storageUrl) {
+        throw new Error('Asset has no storage URL');
+      }
 
-    if (!user) {
-      throw new Error('User not found');
-    }
+      // Validate user exists
+      const user = await this.prisma.user.findUnique({
+        where: { id: downloadedById },
+        select: {
+          id: true,
+          name: true,
+          role: true,
+        },
+      });
 
-    // Validate platform intent if provided (Requirement 9.3)
-    if (platformIntent && !Object.values(Platform).includes(platformIntent)) {
-      throw new Error(`Invalid platform intent: ${platformIntent}`);
-    }
+      if (!user) {
+        throw new Error('User not found');
+      }
 
-    // Generate signed URL with expiration (Requirement 9.1)
-    const signedUrlResponse = await this.storageService.generateSignedUrl({
-      storageUrl: asset.storageUrl,
-      expiresIn,
-    });
+      // Validate platform intent if provided (Requirement 9.3)
+      if (platformIntent && !Object.values(Platform).includes(platformIntent)) {
+        throw new Error(`Invalid platform intent: ${platformIntent}`);
+      }
 
-    // Create download record (Requirement 9.2)
-    const download = await this.prisma.assetDownload.create({
-      data: {
-        assetId,
+      console.log(`[DownloadService] Generating signed URL for asset ${assetId}, storage: ${asset.storageUrl}`);
+
+      // Generate signed URL with expiration (Requirement 9.1)
+      const signedUrlResponse = await this.storageService.generateSignedUrl({
+        storageUrl: asset.storageUrl,
+        expiresIn,
+      });
+
+      console.log(`[DownloadService] Successfully generated signed URL for asset ${assetId}`);
+
+      // Create download record (Requirement 9.2)
+      const download = await this.prisma.assetDownload.create({
+        data: {
+          assetId,
+          downloadedById,
+          platformIntent: platformIntent || null,
+          downloadedAt: new Date(),
+        },
+        select: {
+          id: true,
+          assetId: true,
+          downloadedById: true,
+          downloadedAt: true,
+          platformIntent: true,
+        },
+      });
+
+      // Log download in audit log (Requirement 9.5)
+      await this.auditService.logAssetDownload(
         downloadedById,
-        platformIntent: platformIntent || null,
-        downloadedAt: new Date(),
-      },
-      select: {
-        id: true,
-        assetId: true,
-        downloadedById: true,
-        downloadedAt: true,
-        platformIntent: true,
-      },
-    });
+        assetId,
+        {
+          operation: 'download',
+          platformIntent: platformIntent || null,
+          assetTitle: asset.title,
+          assetType: asset.assetType,
+          downloadId: download.id,
+          expiresAt: signedUrlResponse.expiresAt.toISOString(),
+        },
+        ipAddress,
+        userAgent
+      );
 
-    // Log download in audit log (Requirement 9.5)
-    await this.auditService.logAssetDownload(
-      downloadedById,
-      assetId,
-      {
-        operation: 'download',
-        platformIntent: platformIntent || null,
-        assetTitle: asset.title,
-        assetType: asset.assetType,
-        downloadId: download.id,
-        expiresAt: signedUrlResponse.expiresAt.toISOString(),
-      },
-      ipAddress,
-      userAgent
-    );
-
-    return {
-      downloadUrl: signedUrlResponse.signedUrl,
-      expiresAt: signedUrlResponse.expiresAt,
-    };
+      return {
+        downloadUrl: signedUrlResponse.signedUrl,
+        expiresAt: signedUrlResponse.expiresAt,
+      };
+    } catch (error: any) {
+      console.error(`[DownloadService] Error initiating download for asset ${assetId}:`, error);
+      throw error;
+    }
   }
 
   /**

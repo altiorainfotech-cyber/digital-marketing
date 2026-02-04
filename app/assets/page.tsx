@@ -213,12 +213,19 @@ function AssetListContent() {
         });
 
         if (!response.ok) {
-          throw new Error('Failed to generate download URL');
+          const errorData = await response.json().catch(() => ({ error: 'Failed to generate download URL' }));
+          throw new Error(errorData.error || errorData.details || 'Failed to generate download URL');
         }
 
         const data = await response.json();
+        
+        if (!data.downloadUrl) {
+          throw new Error('No download URL received from server');
+        }
+        
         window.open(data.downloadUrl, '_blank');
       } catch (err: any) {
+        console.error('Download error:', err);
         alert(err.message || 'Failed to download asset');
       }
     }
