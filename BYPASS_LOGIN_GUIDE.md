@@ -125,10 +125,9 @@ dotenv.config({ path: require('path').resolve(__dirname, '../.env') });
 
 ## Access URLs
 
-- 🚨 **Bypass Login**: http://localhost:3000/auth/bypass (USE THIS NOW)
-- 🔒 **Original Login**: http://localhost:3000/auth/signin (broken - database issue)
-- 📊 **Dashboard**: http://localhost:3000/dashboard
-- 👤 **Admin Panel**: http://localhost:3000/admin
+- 🚨 **Bypass Login**: /auth/bypass (USE THIS NOW)
+- 🔒 **Original Login**: /auth/signin (broken - database issue)
+- 👤 **Admin Panel**: /admin
 
 ## Support
 

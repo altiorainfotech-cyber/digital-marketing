@@ -16,9 +16,13 @@ import { Shield, Zap, Users, CheckCircle } from 'lucide-react';
 export default async function Home() {
   const session = await getCurrentSession();
 
-  // Redirect authenticated users to dashboard
+  // Redirect authenticated users based on role
   if (session?.user) {
-    redirect('/dashboard');
+    if (session.user.role === 'ADMIN') {
+      redirect('/admin');
+    } else {
+      redirect('/dashboard');
+    }
   }
 
   // Show landing page for unauthenticated users

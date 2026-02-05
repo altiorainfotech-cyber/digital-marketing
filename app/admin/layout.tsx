@@ -42,7 +42,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     // Only redirect if we've confirmed the user is NOT an admin
     // Don't redirect during loading state
     if (status === 'authenticated' && !isAdmin) {
-      router.push('/dashboard');
+      router.push('/');
     }
   }, [status, isAdmin, router]);
 

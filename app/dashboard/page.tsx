@@ -216,24 +216,6 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <TopNav
-        logo={<span className="text-xl font-bold text-blue-600">DASCMS</span>}
-        rightContent={
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-700 dark:text-gray-300">
-              {user?.name} ({user?.role})
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={signOut}
-            >
-              Sign Out
-            </Button>
-          </div>
-        }
-      />
-
       <PageContainer>
         {/* Welcome Section */}
         <div className="mb-8">

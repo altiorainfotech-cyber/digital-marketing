@@ -307,27 +307,6 @@ function AnalyticsContent() {
 
   return (
     <div className="min-h-screen bg-neutral-50">
-      {/* Header */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Activity className="w-6 h-6 text-primary-600 mr-3" />
-              <h1 className="text-xl font-semibold text-neutral-900">Analytics Dashboard</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => router.push('/assets')}
-              >
-                Back to Assets
-              </Button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {error && (
           <div className="mb-6 bg-error-50 border border-error-200 text-error-700 px-4 py-3 rounded-lg">

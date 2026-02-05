@@ -41,9 +41,9 @@ export default function NotFound() {
             </Button>
           </Link>
           
-          <Link href="/dashboard">
+          <Link href="/admin">
             <Button variant="outline" size="lg" icon={<Search size={20} />} iconPosition="left">
-              Go to Dashboard
+              Go to Admin Panel
             </Button>
           </Link>
         </div>
