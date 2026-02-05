@@ -10,6 +10,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth/api-middleware';
 import { getPublicUrl } from '@/lib/config';
 import prisma from '@/lib/prisma';
+import { VisibilityService } from '@/lib/services/VisibilityService';
+import { VisibilityChecker } from '@/lib/services/VisibilityChecker';
 
 /**
  * GET /api/assets/[id]/public-url
@@ -37,13 +39,18 @@ export async function GET(
         );
       }
 
-      // Find the asset
+      // Find the asset with all necessary fields for visibility check
       const asset = await prisma.asset.findUnique({
         where: { id: assetId },
         select: {
           id: true,
           storageUrl: true,
           assetType: true,
+          uploaderId: true,
+          visibility: true,
+          companyId: true,
+          status: true,
+          uploadType: true,
         },
       });
 
@@ -51,6 +58,19 @@ export async function GET(
         return NextResponse.json(
           { error: 'Asset not found' },
           { status: 404 }
+        );
+      }
+
+      // Check if user has permission to view this asset
+      const visibilityService = new VisibilityService(prisma);
+      const visibilityChecker = new VisibilityChecker(visibilityService);
+      
+      const canView = await visibilityChecker.canView(user, asset as any);
+      
+      if (!canView) {
+        return NextResponse.json(
+          { error: 'You do not have permission to view this asset' },
+          { status: 403 }
         );
       }
 

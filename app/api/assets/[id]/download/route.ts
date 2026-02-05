@@ -52,7 +52,8 @@ function getUserAgent(request: NextRequest): string | undefined {
  * 
  * Request Body:
  * {
- *   platformIntent?: 'X' | 'LINKEDIN' | 'INSTAGRAM' | 'META_ADS' | 'YOUTUBE';
+ *   platformIntent?: 'ADS' | 'INSTAGRAM' | 'META' | 'LINKEDIN' | 'X' | 'SEO' | 'BLOGS' | 'YOUTUBE' | 'SNAPCHAT';
+ *   platforms?: Array<'ADS' | 'INSTAGRAM' | 'META' | 'LINKEDIN' | 'X' | 'SEO' | 'BLOGS' | 'YOUTUBE' | 'SNAPCHAT'>;
  *   expiresIn?: number; // seconds, default 3600 (1 hour)
  * }
  * 
@@ -86,7 +87,7 @@ export async function POST(
 
       // Parse request body
       const body = await request.json().catch(() => ({}));
-      const { platformIntent, expiresIn } = body;
+      const { platformIntent, platforms, expiresIn } = body;
 
       // Validate platform intent if provided
       if (platformIntent && !Object.values(PrismaPlatform).includes(platformIntent as PrismaPlatform)) {
@@ -99,6 +100,24 @@ export async function POST(
           },
           { status: 400 }
         );
+      }
+
+      // Validate platforms array if provided
+      if (platforms && Array.isArray(platforms)) {
+        const invalidPlatforms = platforms.filter(
+          (p: string) => !Object.values(PrismaPlatform).includes(p as PrismaPlatform)
+        );
+        if (invalidPlatforms.length > 0) {
+          return NextResponse.json(
+            {
+              error: 'Validation failed',
+              fields: {
+                platforms: `Invalid platforms: ${invalidPlatforms.join(', ')}. Must be one of: ${Object.values(PrismaPlatform).join(', ')}`,
+              },
+            },
+            { status: 400 }
+          );
+        }
       }
 
       // Validate expiresIn if provided
@@ -129,6 +148,7 @@ export async function POST(
         assetId,
         downloadedById: user.id,
         platformIntent: platformIntent as Platform | undefined,
+        platforms: platforms as Platform[] | undefined,
         ipAddress,
         userAgent,
         expiresIn: validExpiresIn,

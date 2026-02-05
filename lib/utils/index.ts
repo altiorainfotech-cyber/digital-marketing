@@ -12,3 +12,6 @@ export * from './errorHandling';
 
 // API error hook
 export * from './useApiError';
+
+// Download helper utilities
+export * from './downloadHelper';

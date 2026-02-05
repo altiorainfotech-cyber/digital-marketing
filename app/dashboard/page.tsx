@@ -114,22 +114,22 @@ function DashboardContent() {
             description: 'SEO-ready assets',
           },
           {
-            title: 'SEO Performance',
-            value: '-',
+            title: 'Downloaded Assets',
+            value: '0',
+            icon: <FileText size={24} />,
+            description: 'Assets downloaded',
+          },
+          {
+            title: 'Platform Usage',
+            value: '0',
             icon: <BarChart3 size={24} />,
-            description: 'Optimization score',
+            description: 'Platforms tracked',
           },
           {
             title: 'Recent Views',
             value: '0',
             icon: <Eye size={24} />,
             description: 'Views this week',
-          },
-          {
-            title: 'Shared Assets',
-            value: '0',
-            icon: <Share2 size={24} />,
-            description: 'Assets shared',
           },
         ];
       default:
@@ -189,6 +189,11 @@ function DashboardContent() {
             icon: <Search size={20} />,
             onClick: () => router.push('/assets'),
             variant: 'primary' as const,
+          },
+          {
+            label: 'Download History',
+            icon: <FileText size={20} />,
+            onClick: () => router.push('/downloads'),
           },
           {
             label: 'View Analytics',

@@ -291,7 +291,8 @@ export class SearchService {
       campaignName: asset.campaignName,
     })) as Asset[];
 
-    const visibleAssets = await this.visibilityChecker.filterVisibleAssets(
+    // Use role-based filtering to ensure proper visibility for all user roles
+    const visibleAssets = await this.visibilityChecker.filterAssetsByRole(
       user,
       assetsForPermissionCheck
     );
@@ -349,8 +350,8 @@ export class SearchService {
       },
     });
 
-    // Filter by permission
-    return await this.visibilityChecker.filterVisibleAssets(user, assets as Asset[]);
+    // Filter by permission using role-based filtering
+    return await this.visibilityChecker.filterAssetsByRole(user, assets as Asset[]);
   }
 
   /**
@@ -403,8 +404,8 @@ export class SearchService {
       },
     });
 
-    // Filter by permission
-    return await this.visibilityChecker.filterVisibleAssets(user, assets as Asset[]);
+    // Filter by permission using role-based filtering
+    return await this.visibilityChecker.filterAssetsByRole(user, assets as Asset[]);
   }
 
   /**
@@ -439,8 +440,8 @@ export class SearchService {
       },
     });
 
-    // Filter by permission
-    return await this.visibilityChecker.filterVisibleAssets(user, assets as Asset[]);
+    // Filter by permission using role-based filtering
+    return await this.visibilityChecker.filterAssetsByRole(user, assets as Asset[]);
   }
 
   /**
@@ -479,8 +480,8 @@ export class SearchService {
       },
     });
 
-    // Filter by permission
-    return await this.visibilityChecker.filterVisibleAssets(user, assets as Asset[]);
+    // Filter by permission using role-based filtering
+    return await this.visibilityChecker.filterAssetsByRole(user, assets as Asset[]);
   }
 
   /**
@@ -525,7 +526,7 @@ export class SearchService {
       },
     });
 
-    // Filter by permission
-    return await this.visibilityChecker.filterVisibleAssets(user, assets as Asset[]);
+    // Filter by permission using role-based filtering
+    return await this.visibilityChecker.filterAssetsByRole(user, assets as Asset[]);
   }
 }

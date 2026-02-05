@@ -10,6 +10,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { Badge } from '@/lib/design-system/components/primitives/Badge';
 import { Checkbox } from '@/lib/design-system/components/primitives/Checkbox';
 import { Button } from '@/lib/design-system/components/primitives/Button';
@@ -23,7 +24,9 @@ import {
   Eye,
   MoreVertical
 } from 'lucide-react';
-import { AssetType, AssetStatus } from '@/app/generated/prisma';
+import { AssetType, AssetStatus, Platform, UserRole } from '@/app/generated/prisma';
+import { PlatformDownloadModal } from './PlatformDownloadModal';
+import { initiateAssetDownload } from '@/lib/utils/downloadHelper';
 
 export interface AssetCardData {
   id: string;
@@ -108,7 +111,24 @@ function formatDate(dateString: string): string {
 /**
  * Render asset preview thumbnail
  */
-function AssetPreview({ asset, previewUrl }: { asset: AssetCardData; previewUrl?: string }) {
+function AssetPreview({ asset, previewUrl, hasError }: { asset: AssetCardData; previewUrl?: string; hasError?: boolean }) {
+  // Show fallback icon while loading or if there's an error
+  if ((asset.assetType === AssetType.IMAGE || asset.assetType === AssetType.VIDEO) && !previewUrl) {
+    return (
+      <div className="flex items-center justify-center h-full w-full">
+        <div className="text-center">
+          <div className="text-blue-600 mb-2 flex justify-center">
+            {getAssetTypeIcon(asset.assetType)}
+          </div>
+          <p className="text-sm text-gray-600 font-medium">{asset.assetType}</p>
+          {hasError && (
+            <p className="text-xs text-red-500 mt-1">No preview access</p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (asset.assetType === AssetType.IMAGE && previewUrl) {
     return (
       <img
@@ -125,7 +145,7 @@ function AssetPreview({ asset, previewUrl }: { asset: AssetCardData; previewUrl?
                   <svg class="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  <p class="text-xs text-gray-500">Preview unavailable</p>
+                  <p class="text-xs text-gray-500">Image load failed</p>
                 </div>
               </div>
             `;
@@ -153,7 +173,7 @@ function AssetPreview({ asset, previewUrl }: { asset: AssetCardData; previewUrl?
                     <svg class="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
-                    <p class="text-xs text-gray-500">Preview unavailable</p>
+                    <p class="text-xs text-gray-500">Video load failed</p>
                   </div>
                 </div>
               `;
@@ -169,11 +189,11 @@ function AssetPreview({ asset, previewUrl }: { asset: AssetCardData; previewUrl?
     );
   }
 
-  // Fallback for documents, links, or when preview is not available
+  // Fallback for documents, links
   return (
-    <div className="flex items-center justify-center h-full">
+    <div className="flex items-center justify-center h-full w-full">
       <div className="text-center">
-        <div className="text-blue-600 mb-2">
+        <div className="text-blue-600 mb-2 flex justify-center">
           {getAssetTypeIcon(asset.assetType)}
         </div>
         <p className="text-sm text-gray-600 font-medium">{asset.assetType}</p>
@@ -193,23 +213,32 @@ function AssetCardGrid({
   showCheckbox 
 }: AssetCardProps) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [showActions, setShowActions] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | undefined>(undefined);
   const [loadingPreview, setLoadingPreview] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
+  const [showPlatformModal, setShowPlatformModal] = useState(false);
 
   // Fetch preview URL for images and videos
   useEffect(() => {
     const fetchPreviewUrl = async () => {
       if (asset.assetType === AssetType.IMAGE || asset.assetType === AssetType.VIDEO) {
         setLoadingPreview(true);
+        setPreviewError(false);
         try {
           const response = await fetch(`/api/assets/${asset.id}/public-url`);
           if (response.ok) {
             const data = await response.json();
             setPreviewUrl(data.publicUrl);
+          } else {
+            // If we get 403 or other error, mark as error so we show fallback
+            console.warn(`Failed to fetch preview URL for asset ${asset.id}: ${response.status} ${response.statusText}`);
+            setPreviewError(true);
           }
         } catch (err) {
           console.error(`Failed to fetch preview URL for asset ${asset.id}:`, err);
+          setPreviewError(true);
         } finally {
           setLoadingPreview(false);
         }
@@ -229,25 +258,21 @@ function AssetCardGrid({
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    // Check if user is SEO_SPECIALIST - they must select platforms first
+    if (session?.user?.role === UserRole.SEO_SPECIALIST) {
+      setShowPlatformModal(true);
+      return;
+    }
+    
+    // For other users, proceed with direct download
+    await performDownload([]);
+  };
+
+  const performDownload = async (platforms: Platform[]) => {
     try {
-      const response = await fetch(`/api/assets/${asset.id}/download`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to generate download URL' }));
-        throw new Error(errorData.error || errorData.details || 'Failed to generate download URL');
-      }
-
-      const data = await response.json();
-      
-      if (!data.downloadUrl) {
-        throw new Error('No download URL received from server');
-      }
-      
-      window.open(data.downloadUrl, '_blank');
+      await initiateAssetDownload(asset.id, platforms, asset.title);
+      setShowPlatformModal(false);
     } catch (err: any) {
       console.error('Download error:', err);
       alert(err.message || 'Failed to download asset');
@@ -255,12 +280,20 @@ function AssetCardGrid({
   };
 
   return (
-    <div
-      className="bg-white rounded-lg shadow hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden group relative"
-      onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
-      onClick={handleCardClick}
-    >
+    <>
+      <PlatformDownloadModal
+        isOpen={showPlatformModal}
+        onClose={() => setShowPlatformModal(false)}
+        onConfirm={performDownload}
+        assetTitle={asset.title}
+      />
+      
+      <div
+        className="bg-white rounded-lg shadow hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden group relative"
+        onMouseEnter={() => setShowActions(true)}
+        onMouseLeave={() => setShowActions(false)}
+        onClick={handleCardClick}
+      >
       {/* Checkbox */}
       {showCheckbox && (
         <div className="absolute top-3 left-3 z-10">
@@ -282,7 +315,7 @@ function AssetCardGrid({
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
         ) : (
-          <AssetPreview asset={asset} previewUrl={previewUrl} />
+          <AssetPreview asset={asset} previewUrl={previewUrl} hasError={previewError} />
         )}
 
         {/* Hover Overlay with Quick Actions */}
@@ -382,6 +415,7 @@ function AssetCardGrid({
         </div>
       </div>
     </div>
+    </>
   );
 }
 
@@ -396,6 +430,8 @@ function AssetCardList({
   showCheckbox 
 }: AssetCardProps) {
   const router = useRouter();
+  const { data: session } = useSession();
+  const [showPlatformModal, setShowPlatformModal] = useState(false);
 
   const handleRowClick = (e: React.MouseEvent) => {
     // Don't navigate if clicking checkbox or action buttons
@@ -405,11 +441,42 @@ function AssetCardList({
     router.push(`/assets/${asset.id}`);
   };
 
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    // Check if user is SEO_SPECIALIST - they must select platforms first
+    if (session?.user?.role === UserRole.SEO_SPECIALIST) {
+      setShowPlatformModal(true);
+      return;
+    }
+    
+    // For other users, proceed with direct download
+    await performDownload([]);
+  };
+
+  const performDownload = async (platforms: Platform[]) => {
+    try {
+      await initiateAssetDownload(asset.id, platforms, asset.title);
+      setShowPlatformModal(false);
+    } catch (err: any) {
+      console.error('Download error:', err);
+      alert(err.message || 'Failed to download asset');
+    }
+  };
+
   return (
-    <tr
-      className="hover:bg-gray-50 cursor-pointer transition-colors duration-150"
-      onClick={handleRowClick}
-    >
+    <>
+      <PlatformDownloadModal
+        isOpen={showPlatformModal}
+        onClose={() => setShowPlatformModal(false)}
+        onConfirm={performDownload}
+        assetTitle={asset.title}
+      />
+      
+      <tr
+        className="hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+        onClick={handleRowClick}
+      >
       {/* Checkbox */}
       {showCheckbox && (
         <td className="px-6 py-4 whitespace-nowrap">
@@ -487,15 +554,13 @@ function AssetCardList({
             size="sm"
             variant="ghost"
             icon={<Download className="w-4 h-4" />}
-            onClick={(e) => {
-              e.stopPropagation();
-              onQuickAction?.('download', asset.id);
-            }}
+            onClick={handleDownload}
             aria-label="Download asset"
           />
         </div>
       </td>
     </tr>
+    </>
   );
 }
 

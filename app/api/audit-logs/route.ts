@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
     const action = searchParams.get('action') as AuditAction | undefined;
     const resourceType = searchParams.get('resourceType') as ResourceType | undefined;
     const resourceId = searchParams.get('resourceId') || undefined;
+    const userRole = searchParams.get('userRole') as UserRole | undefined;
     const startDate = searchParams.get('startDate') 
       ? new Date(searchParams.get('startDate')!) 
       : undefined;
@@ -50,20 +51,56 @@ export async function GET(request: NextRequest) {
     // Calculate offset
     const offset = (page - 1) * limit;
 
-    // Query audit logs
-    const auditRepository = new AuditRepository(prisma as any);
-    const result = await auditRepository.queryAuditLogs({
-      userId,
-      action,
-      resourceType,
-      resourceId,
-      startDate,
-      endDate,
-      limit,
-      offset,
-    });
+    // Build where clause
+    const where: any = {};
+    if (userId) where.userId = userId;
+    if (action) where.action = action;
+    if (resourceType) where.resourceType = resourceType;
+    if (resourceId) where.resourceId = resourceId;
+    if (userRole) where.User = { role: userRole };
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.gte = startDate;
+      if (endDate) where.createdAt.lte = endDate;
+    }
 
-    return NextResponse.json(result);
+    // Query audit logs with user role filter
+    const [logs, total] = await Promise.all([
+      prisma.auditLog.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: offset,
+        include: {
+          User: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              role: true,
+            },
+          },
+          Asset: {
+            select: {
+              id: true,
+              title: true,
+              assetType: true,
+            },
+          },
+        },
+      }),
+      prisma.auditLog.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return NextResponse.json({
+      logs,
+      total,
+      page,
+      limit,
+      totalPages,
+    });
   } catch (error) {
     console.error('Error fetching audit logs:', error);
     return NextResponse.json(

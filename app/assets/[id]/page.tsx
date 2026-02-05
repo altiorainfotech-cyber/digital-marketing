@@ -17,7 +17,7 @@ import { Badge } from '@/lib/design-system/components/primitives/Badge';
 import { Chip } from '@/lib/design-system/components/primitives/Chip';
 import { Breadcrumb } from '@/lib/design-system/components/composite/Breadcrumb';
 import { LoadingState } from '@/lib/design-system/components/patterns/LoadingState';
-import { ShareModal } from '@/components/assets';
+import { ShareModal, PlatformDownloadModal } from '@/components/assets';
 import { 
   ArrowLeft,
   Download,
@@ -36,6 +36,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { AssetType, UploadType, AssetStatus, UserRole, Platform, VisibilityLevel } from '@/app/generated/prisma';
+import { initiateAssetDownload } from '@/lib/utils/downloadHelper';
 
 interface Asset {
   id: string;
@@ -121,6 +122,9 @@ function AssetDetailContent() {
 
   // Sharing modal state
   const [showShareModal, setShowShareModal] = useState(false);
+  
+  // Platform download modal state
+  const [showPlatformModal, setShowPlatformModal] = useState(false);
 
   const isAdmin = user?.role === UserRole.ADMIN;
   const isOwner = user?.id === asset?.uploaderId;
@@ -237,25 +241,21 @@ function AssetDetailContent() {
   }, [assetId, asset]);
 
   const handleDownload = async () => {
+    // Check if user is SEO_SPECIALIST - they must select platforms first
+    if (user?.role === UserRole.SEO_SPECIALIST) {
+      setShowPlatformModal(true);
+      return;
+    }
+    
+    // For other users, proceed with direct download
+    await performDownload([]);
+  };
+
+  const performDownload = async (platforms: Platform[]) => {
     try {
-      const response = await fetch(`/api/assets/${assetId}/download`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to generate download URL' }));
-        throw new Error(errorData.error || errorData.details || 'Failed to generate download URL');
-      }
-
-      const data = await response.json();
-      
-      if (!data.downloadUrl) {
-        throw new Error('No download URL received from server');
-      }
-      
-      window.open(data.downloadUrl, '_blank');
+      await initiateAssetDownload(assetId as string, platforms, asset?.title);
+      setShowPlatformModal(false);
+      console.log('Download started successfully');
     } catch (err: any) {
       console.error('Download error:', err);
       alert(err.message || 'Failed to download asset');
@@ -561,7 +561,7 @@ function AssetDetailContent() {
                         <option value={Platform.X}>X (Twitter)</option>
                         <option value={Platform.LINKEDIN}>LinkedIn</option>
                         <option value={Platform.INSTAGRAM}>Instagram</option>
-                        <option value={Platform.META_ADS}>Meta Ads</option>
+                        <option value={Platform.META}>Meta</option>
                         <option value={Platform.YOUTUBE}>YouTube</option>
                       </select>
                     </div>
@@ -824,6 +824,14 @@ function AssetDetailContent() {
           currentUserId={user.id}
         />
       )}
+      
+      {/* Platform Download Modal */}
+      <PlatformDownloadModal
+        isOpen={showPlatformModal}
+        onClose={() => setShowPlatformModal(false)}
+        onConfirm={performDownload}
+        assetTitle={asset?.title || 'Asset'}
+      />
     </div>
   );
 }

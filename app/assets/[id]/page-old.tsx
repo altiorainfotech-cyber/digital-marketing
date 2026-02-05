@@ -517,7 +517,7 @@ function AssetDetailContent() {
                       <option value={Platform.X}>X (Twitter)</option>
                       <option value={Platform.LINKEDIN}>LinkedIn</option>
                       <option value={Platform.INSTAGRAM}>Instagram</option>
-                      <option value={Platform.META_ADS}>Meta Ads</option>
+                      <option value={Platform.META}>Meta</option>
                       <option value={Platform.YOUTUBE}>YouTube</option>
                     </select>
                   </div>

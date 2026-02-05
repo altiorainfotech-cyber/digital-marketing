@@ -23,6 +23,7 @@ export interface InitiateDownloadParams {
   assetId: string;
   downloadedById: string;
   platformIntent?: Platform;
+  platforms?: Platform[];
   ipAddress?: string;
   userAgent?: string;
   expiresIn?: number; // seconds, default 3600 (1 hour)
@@ -70,6 +71,7 @@ export class DownloadService {
       assetId,
       downloadedById,
       platformIntent,
+      platforms = [],
       ipAddress,
       userAgent,
       expiresIn = 3600, // Default 1 hour
@@ -115,6 +117,16 @@ export class DownloadService {
         throw new Error(`Invalid platform intent: ${platformIntent}`);
       }
 
+      // Validate platforms array
+      if (platforms.length > 0) {
+        const invalidPlatforms = platforms.filter(
+          (p) => !Object.values(Platform).includes(p)
+        );
+        if (invalidPlatforms.length > 0) {
+          throw new Error(`Invalid platforms: ${invalidPlatforms.join(', ')}`);
+        }
+      }
+
       console.log(`[DownloadService] Generating signed URL for asset ${assetId}, storage: ${asset.storageUrl}`);
 
       // Generate signed URL with expiration (Requirement 9.1)
@@ -131,6 +143,7 @@ export class DownloadService {
           assetId,
           downloadedById,
           platformIntent: platformIntent || null,
+          platforms: platforms.length > 0 ? platforms : [],
           downloadedAt: new Date(),
         },
         select: {
@@ -139,6 +152,7 @@ export class DownloadService {
           downloadedById: true,
           downloadedAt: true,
           platformIntent: true,
+          platforms: true,
         },
       });
 
@@ -149,10 +163,12 @@ export class DownloadService {
         {
           operation: 'download',
           platformIntent: platformIntent || null,
+          platforms: platforms.length > 0 ? platforms : null,
           assetTitle: asset.title,
           assetType: asset.assetType,
           downloadId: download.id,
           expiresAt: signedUrlResponse.expiresAt.toISOString(),
+          userRole: user.role,
         },
         ipAddress,
         userAgent

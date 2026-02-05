@@ -280,11 +280,15 @@ export class UsageService {
 
     // Calculate platform breakdown
     const platformBreakdown: Record<Platform, number> = {
+      [Platform.ADS]: 0,
       [Platform.X]: 0,
       [Platform.LINKEDIN]: 0,
       [Platform.INSTAGRAM]: 0,
-      [Platform.META_ADS]: 0,
+      [Platform.META]: 0,
       [Platform.YOUTUBE]: 0,
+      [Platform.SEO]: 0,
+      [Platform.BLOGS]: 0,
+      [Platform.SNAPCHAT]: 0,
     };
 
     allUsages.forEach((usage) => {

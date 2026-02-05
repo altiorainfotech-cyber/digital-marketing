@@ -67,6 +67,7 @@ function AuditLogViewerContent() {
     resourceType: '',
     startDate: '',
     endDate: '',
+    userRole: '',
   });
 
   useEffect(() => {
@@ -93,6 +94,7 @@ function AuditLogViewerContent() {
       if (filters.resourceType) params.append('resourceType', filters.resourceType);
       if (filters.startDate) params.append('startDate', filters.startDate);
       if (filters.endDate) params.append('endDate', filters.endDate);
+      if (filters.userRole) params.append('userRole', filters.userRole);
 
       const response = await fetch(`/api/audit-logs?${params.toString()}`);
       
@@ -123,6 +125,7 @@ function AuditLogViewerContent() {
       resourceType: '',
       startDate: '',
       endDate: '',
+      userRole: '',
     });
     setPage(1);
   };
@@ -267,6 +270,22 @@ function AuditLogViewerContent() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                User Role
+              </label>
+              <select
+                value={filters.userRole}
+                onChange={(e) => handleFilterChange('userRole', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All Roles</option>
+                <option value="ADMIN">Admin</option>
+                <option value="CONTENT_CREATOR">Content Creator</option>
+                <option value="SEO_SPECIALIST">SEO Specialist</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Start Date
               </label>
               <input
@@ -289,7 +308,7 @@ function AuditLogViewerContent() {
               />
             </div>
 
-            <div className="flex items-end">
+            <div className="flex items-end md:col-span-2 lg:col-span-1">
               <button
                 onClick={clearFilters}
                 className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
@@ -376,7 +395,20 @@ function AuditLogViewerContent() {
                           </div>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                          {formatMetadata(log.metadata)}
+                          {log.action === 'DOWNLOAD' && log.metadata?.platforms ? (
+                            <div>
+                              <div className="font-medium text-gray-700">
+                                Platforms: {Array.isArray(log.metadata.platforms) 
+                                  ? log.metadata.platforms.join(', ') 
+                                  : log.metadata.platformIntent || 'Not specified'}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                {formatMetadata(log.metadata)}
+                              </div>
+                            </div>
+                          ) : (
+                            formatMetadata(log.metadata)
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <button
@@ -509,6 +541,37 @@ function AuditLogViewerContent() {
                     </span>
                   )}
                 </label>
+                
+                {/* Special display for download actions with platforms */}
+                {selectedLog.action === 'DOWNLOAD' && selectedLog.metadata?.platforms && (
+                  <div className="mb-4 p-4 bg-blue-50 rounded-md border border-blue-200">
+                    <div className="text-sm font-medium text-blue-900 mb-2">
+                      Platform Usage
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {Array.isArray(selectedLog.metadata.platforms) ? (
+                        selectedLog.metadata.platforms.map((platform: string) => (
+                          <span
+                            key={platform}
+                            className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+                          >
+                            {platform}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                          {selectedLog.metadata.platformIntent || 'Not specified'}
+                        </span>
+                      )}
+                    </div>
+                    {selectedLog.metadata.userRole && (
+                      <div className="mt-2 text-xs text-blue-700">
+                        Downloaded by: {selectedLog.metadata.userRole}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="bg-gray-50 rounded-md p-4 border border-gray-200">
                   <pre className="text-xs text-gray-900 whitespace-pre-wrap break-all">
                     {JSON.stringify(selectedLog.metadata, null, 2)}

@@ -10,3 +10,5 @@ export type { AssetCardData, AssetCardProps } from './AssetCard';
 export { CalendarFilter } from './CalendarFilter';
 export type { CalendarFilterProps } from './CalendarFilter';
 export { PlatformSelectionModal } from './PlatformSelectionModal';
+export { PlatformDownloadModal } from './PlatformDownloadModal';
+export type { PlatformDownloadModalProps } from './PlatformDownloadModal';
