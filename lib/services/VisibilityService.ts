@@ -17,9 +17,9 @@ import { PrismaClient, VisibilityLevel, UserRole } from '@/app/generated/prisma'
 import type { User, Asset } from '@/types';
 
 export class VisibilityService {
-  private prisma: PrismaClient;
+  private prisma: any;
 
-  constructor(prisma: PrismaClient) {
+  constructor(prisma: any) {
     this.prisma = prisma;
   }
 
@@ -144,7 +144,7 @@ export class VisibilityService {
       where: { visibility: VisibilityLevel.PUBLIC },
       select: { id: true },
     });
-    visibleAssets.push(...publicAssets.map(a => a.id));
+    visibleAssets.push(...publicAssets.map((a: { id: string }) => a.id));
 
     // Get all UPLOADER_ONLY assets where user is the uploader
     const uploaderAssets = await this.prisma.asset.findMany({
@@ -154,7 +154,7 @@ export class VisibilityService {
       },
       select: { id: true },
     });
-    visibleAssets.push(...uploaderAssets.map(a => a.id));
+    visibleAssets.push(...uploaderAssets.map((a: { id: string }) => a.id));
 
     // Get all UPLOADER_ONLY assets explicitly shared with the user (Requirement 13.3)
     const sharedUploaderOnlyAssets = await this.prisma.asset.findMany({
@@ -168,7 +168,7 @@ export class VisibilityService {
       },
       select: { id: true },
     });
-    visibleAssets.push(...sharedUploaderOnlyAssets.map(a => a.id));
+    visibleAssets.push(...sharedUploaderOnlyAssets.map((a: { id: string }) => a.id));
 
     // Get all ADMIN_ONLY assets if user is Admin or uploader
     if (user.role === UserRole.ADMIN) {
@@ -176,7 +176,7 @@ export class VisibilityService {
         where: { visibility: VisibilityLevel.ADMIN_ONLY },
         select: { id: true },
       });
-      visibleAssets.push(...adminAssets.map(a => a.id));
+      visibleAssets.push(...adminAssets.map((a: { id: string }) => a.id));
     } else {
       // Non-admin users can see ADMIN_ONLY assets they uploaded
       const adminUploaderAssets = await this.prisma.asset.findMany({
@@ -186,7 +186,7 @@ export class VisibilityService {
         },
         select: { id: true },
       });
-      visibleAssets.push(...adminUploaderAssets.map(a => a.id));
+      visibleAssets.push(...adminUploaderAssets.map((a: { id: string }) => a.id));
     }
 
     // Get all COMPANY assets if user has a company
@@ -198,7 +198,7 @@ export class VisibilityService {
         },
         select: { id: true },
       });
-      visibleAssets.push(...companyAssets.map(a => a.id));
+      visibleAssets.push(...companyAssets.map((a: { id: string }) => a.id));
     }
 
     // Get all ROLE assets where user's role matches
@@ -209,7 +209,7 @@ export class VisibilityService {
       },
       select: { assetId: true },
     });
-    visibleAssets.push(...roleShares.map(s => s.assetId));
+    visibleAssets.push(...roleShares.map((s: { assetId: string }) => s.assetId));
 
     // Get all SELECTED_USERS assets where user is explicitly shared or is the uploader
     const selectedUsersAssets = await this.prisma.asset.findMany({
@@ -228,7 +228,7 @@ export class VisibilityService {
       },
       select: { id: true },
     });
-    visibleAssets.push(...selectedUsersAssets.map(a => a.id));
+    visibleAssets.push(...selectedUsersAssets.map((a: { id: string }) => a.id));
 
     // Remove duplicates
     return [...new Set(visibleAssets)];

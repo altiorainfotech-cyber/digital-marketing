@@ -65,7 +65,14 @@ export async function GET(
       const visibilityService = new VisibilityService(prisma);
       const visibilityChecker = new VisibilityChecker(visibilityService);
       
-      const canView = await visibilityChecker.canView(user, asset as any);
+      // Add missing User type fields for visibility check
+      const userWithDates = {
+        ...user,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any;
+      
+      const canView = await visibilityChecker.canView(userWithDates, asset as any);
       
       if (!canView) {
         return NextResponse.json(
