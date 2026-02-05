@@ -84,14 +84,15 @@ export class StorageService {
     assetType: AssetType,
     fileName: string,
     contentType: string,
-    expiresIn: number = 3600
+    expiresIn: number = 3600,
+    customKey?: string // Optional custom key to ensure consistency
   ): Promise<string> {
     switch (assetType) {
       case AssetType.IMAGE:
       case AssetType.VIDEO:
       case AssetType.DOCUMENT:
         // Use R2 for all file types
-        return this.generateR2UploadUrl(assetId, fileName, contentType, expiresIn);
+        return this.generateR2UploadUrl(assetId, fileName, contentType, expiresIn, customKey);
       case AssetType.LINK:
         // Links don't require presigned URLs
         return '';
@@ -173,9 +174,10 @@ export class StorageService {
     assetId: string,
     fileName: string,
     contentType: string,
-    expiresIn: number
+    expiresIn: number,
+    customKey?: string
   ): Promise<string> {
-    const key = this.generateR2Key(assetId, fileName);
+    const key = customKey || this.generateR2Key(assetId, fileName);
 
     const command = new PutObjectCommand({
       Bucket: this.config.r2BucketName,

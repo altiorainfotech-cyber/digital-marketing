@@ -109,17 +109,23 @@ export class UploadHandler {
     }
 
     try {
-      // Generate presigned URL using StorageService
+      // Generate the R2 key first to ensure consistency
+      const timestamp = Date.now();
+      const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const r2Key = `assets/${assetId}/${timestamp}-${sanitizedFileName}`;
+      
+      // Generate presigned URL using StorageService with the custom key
       const uploadUrl = await this.storageService.generatePresignedUploadUrl(
         assetId,
         assetType,
         fileName,
         contentType,
-        expiresIn
+        expiresIn,
+        r2Key // Pass the custom key to ensure consistency
       );
 
-      // Generate storage URL based on asset type
-      const storageUrl = this.generateStorageUrl(assetId, assetType);
+      // Generate storage URL based on the same key
+      const storageUrl = `r2://${this.config.r2BucketName}/${r2Key}`;
 
       return {
         assetId,
@@ -187,18 +193,23 @@ export class UploadHandler {
   /**
    * Generate storage URL based on asset type and ID
    * 
+   * Note: This generates a placeholder URL. The actual storage URL with the
+   * full path (including timestamp and filename) will be set when the upload
+   * is completed via the /api/assets/complete endpoint.
+   * 
    * @param assetId - Asset ID
    * @param assetType - Asset type
-   * @returns Storage URL in the format: {service}://{account-id}/{asset-id}
+   * @returns Storage URL in the format: r2://{bucket}/assets/{asset-id}
    */
   private generateStorageUrl(assetId: string, assetType: AssetType): string {
     switch (assetType) {
       case AssetType.IMAGE:
-        return `r2://${this.config.r2BucketName}/images/${assetId}`;
       case AssetType.VIDEO:
-        return `r2://${this.config.r2BucketName}/videos/${assetId}`;
       case AssetType.DOCUMENT:
-        return `r2://${this.config.r2BucketName}/documents/${assetId}`;
+        // All files are stored in the assets/ directory with the pattern:
+        // assets/{assetId}/{timestamp}-{filename}
+        // This placeholder will be updated when upload completes
+        return `r2://${this.config.r2BucketName}/assets/${assetId}`;
       case AssetType.LINK:
         return `link://${assetId}`;
       default:

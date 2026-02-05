@@ -22,7 +22,8 @@ import {
   Link as LinkIcon,
   X,
   Eye,
-  Download
+  Download,
+  Grid3x3
 } from 'lucide-react';
 
 interface Asset {
@@ -61,6 +62,10 @@ function AdminAssetsContent() {
   const [filterType, setFilterType] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [filterCompany, setFilterCompany] = useState<string>('');
+  
+  // View mode
+  const [viewMode, setViewMode] = useState<'grid' | 'company'>('grid');
+  const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
 
   // Asset preview URLs
   const [assetPreviewUrls, setAssetPreviewUrls] = useState<Record<string, string>>({});
@@ -356,11 +361,44 @@ function AdminAssetsContent() {
           )}
         </div>
 
-        {hasActiveFilters && (
-          <div className="mt-3 text-sm text-neutral-600 dark:text-neutral-400">
-            Showing {filteredAssets.length} of {assets.length} assets
+        {/* View Toggle */}
+        <div className="mt-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-neutral-600 dark:text-neutral-400">View:</span>
+            <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`px-3 py-1.5 rounded text-sm transition-colors ${
+                  viewMode === 'grid'
+                    ? 'bg-white dark:bg-neutral-700 text-primary-600 dark:text-primary-400 shadow-sm'
+                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200'
+                }`}
+              >
+                <Grid3x3 className="w-4 h-4 inline mr-1" />
+                Grid
+              </button>
+              <button
+                onClick={() => setViewMode('company')}
+                className={`px-3 py-1.5 rounded text-sm transition-colors ${
+                  viewMode === 'company'
+                    ? 'bg-white dark:bg-neutral-700 text-primary-600 dark:text-primary-400 shadow-sm'
+                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200'
+                }`}
+              >
+                <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+                By Company
+              </button>
+            </div>
           </div>
-        )}
+
+          {hasActiveFilters && (
+            <div className="text-sm text-neutral-600 dark:text-neutral-400">
+              Showing {filteredAssets.length} of {assets.length} assets
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Assets Grid */}
@@ -375,7 +413,7 @@ function AdminAssetsContent() {
             {hasActiveFilters ? 'Try adjusting your filters' : 'No assets have been uploaded yet'}
           </p>
         </div>
-      ) : (
+      ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredAssets.map((asset) => (
             <div
@@ -412,12 +450,19 @@ function AdminAssetsContent() {
                   </p>
                 )}
 
-                <div className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-4">
-                  {asset.Company && (
-                    <div>
-                      <span className="font-medium">Company:</span> {asset.Company.name}
+                {/* Company Name - Prominent Display */}
+                {asset.Company && (
+                  <div className="mb-3 p-2 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                      <span className="text-sm font-semibold text-primary-900 dark:text-primary-100">{asset.Company.name}</span>
                     </div>
-                  )}
+                  </div>
+                )}
+
+                <div className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-4">
                   {asset.uploader && (
                     <div>
                       <span className="font-medium">Uploader:</span> {asset.uploader.name}
@@ -466,6 +511,139 @@ function AdminAssetsContent() {
             </div>
           ))}
         </div>
+      ) : (
+        /* Company Folder View */
+        (() => {
+          // Group assets by company
+          const assetsByCompany = filteredAssets.reduce((acc, asset) => {
+            const companyName = asset.Company?.name || 'No Company';
+            if (!acc[companyName]) {
+              acc[companyName] = [];
+            }
+            acc[companyName].push(asset);
+            return acc;
+          }, {} as Record<string, typeof filteredAssets>);
+
+          const companyNames = Object.keys(assetsByCompany).sort();
+
+          return (
+            <div className="space-y-4">
+              {companyNames.map((companyName) => {
+                const companyAssets = assetsByCompany[companyName];
+                const isExpanded = expandedCompanies.has(companyName);
+
+                return (
+                  <div key={companyName} className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+                    {/* Company Folder Header */}
+                    <button
+                      onClick={() => {
+                        const newExpanded = new Set(expandedCompanies);
+                        if (isExpanded) {
+                          newExpanded.delete(companyName);
+                        } else {
+                          newExpanded.add(companyName);
+                        }
+                        setExpandedCompanies(newExpanded);
+                      }}
+                      className="w-full px-6 py-4 flex items-center justify-between hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <svg 
+                          className={`w-5 h-5 text-neutral-500 dark:text-neutral-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                        <svg className="w-6 h-6 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                        </svg>
+                        <div className="text-left">
+                          <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{companyName}</h3>
+                          <p className="text-sm text-neutral-500 dark:text-neutral-400">{companyAssets.length} asset{companyAssets.length !== 1 ? 's' : ''}</p>
+                        </div>
+                      </div>
+                      <Badge variant="primary" size="sm">
+                        {companyAssets.length}
+                      </Badge>
+                    </button>
+
+                    {/* Company Assets Grid */}
+                    {isExpanded && (
+                      <div className="border-t border-neutral-200 dark:border-neutral-800 p-6 bg-neutral-50 dark:bg-neutral-800/50">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {companyAssets.map((asset) => (
+                            <div
+                              key={asset.id}
+                              className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-800 overflow-hidden hover:shadow-md transition-shadow"
+                            >
+                              {/* Content */}
+                              <div className="p-4">
+                                {/* Asset Preview Thumbnail */}
+                                {renderAssetPreview(asset)}
+
+                                <div className="flex items-start gap-3 mb-3">
+                                  <div className="text-primary-600 dark:text-primary-400">
+                                    {getAssetTypeIcon(asset.assetType)}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 truncate">
+                                      {asset.title}
+                                    </h3>
+                                    <div className="flex gap-2 mt-1">
+                                      <Badge variant={getAssetTypeBadgeVariant(asset.assetType) as any} size="sm">
+                                        {asset.assetType}
+                                      </Badge>
+                                      <Badge variant={getStatusBadgeVariant(asset.status) as any} size="sm">
+                                        {asset.status}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {asset.description && (
+                                  <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3 line-clamp-2">
+                                    {asset.description}
+                                  </p>
+                                )}
+
+                                <div className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+                                  {asset.uploader && (
+                                    <div>
+                                      <span className="font-medium">Uploader:</span> {asset.uploader.name}
+                                    </div>
+                                  )}
+                                  <div>
+                                    <span className="font-medium">Uploaded:</span>{' '}
+                                    {new Date(asset.uploadedAt).toLocaleDateString()}
+                                  </div>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="primary"
+                                    size="sm"
+                                    icon={<Eye className="w-4 h-4" />}
+                                    onClick={() => router.push(`/assets/${asset.id}`)}
+                                    fullWidth
+                                  >
+                                    View
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()
       )}
     </div>
   );

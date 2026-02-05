@@ -29,7 +29,8 @@ import {
   BarChart3,
   Filter,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  ChevronRight
 } from 'lucide-react';
 import { AssetType, UploadType, AssetStatus, UserRole } from '@/app/generated/prisma';
 
@@ -60,9 +61,10 @@ function AssetListContent() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'company'>('grid');
   const [showFilters, setShowFilters] = useState(true);
   const [selectedAssets, setSelectedAssets] = useState<Set<string>>(new Set());
+  const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
 
   const [filters, setFilters] = useState<SearchFilters>({
     query: '',
@@ -310,6 +312,7 @@ function AssetListContent() {
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                   aria-label="Grid view"
+                  title="Grid view"
                 >
                   <Grid3x3 className="w-4 h-4" />
                 </button>
@@ -321,8 +324,23 @@ function AssetListContent() {
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                   aria-label="List view"
+                  title="List view"
                 >
                   <List className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('company')}
+                  className={`p-2 rounded transition-colors ${
+                    viewMode === 'company'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  aria-label="Company folder view"
+                  title="Company folder view"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                  </svg>
                 </button>
               </div>
             </div>
@@ -599,6 +617,88 @@ function AssetListContent() {
             </table>
           </div>
         )}
+
+        {/* Company Folder View */}
+        {!loading && assets.length > 0 && viewMode === 'company' && (() => {
+          // Group assets by company
+          const assetsByCompany = assets.reduce((acc, asset) => {
+            const companyName = asset.company?.name || asset.Company?.name || 'No Company';
+            if (!acc[companyName]) {
+              acc[companyName] = [];
+            }
+            acc[companyName].push(asset);
+            return acc;
+          }, {} as Record<string, typeof assets>);
+
+          const sortedCompanyNames = Object.keys(assetsByCompany).sort();
+
+          return (
+            <div className="space-y-4">
+              {sortedCompanyNames.map((companyName) => {
+                const companyAssets = assetsByCompany[companyName];
+                const isExpanded = expandedCompanies.has(companyName);
+
+                return (
+                  <div key={companyName} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    {/* Company Folder Header */}
+                    <button
+                      onClick={() => {
+                        const newExpanded = new Set(expandedCompanies);
+                        if (isExpanded) {
+                          newExpanded.delete(companyName);
+                        } else {
+                          newExpanded.add(companyName);
+                        }
+                        setExpandedCompanies(newExpanded);
+                      }}
+                      className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <svg 
+                          className={`w-5 h-5 text-gray-500 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                        <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                        </svg>
+                        <div className="text-left">
+                          <h3 className="text-lg font-semibold text-gray-900">{companyName}</h3>
+                          <p className="text-sm text-gray-500">{companyAssets.length} asset{companyAssets.length !== 1 ? 's' : ''}</p>
+                        </div>
+                      </div>
+                      <Badge variant="primary" size="sm">
+                        {companyAssets.length}
+                      </Badge>
+                    </button>
+
+                    {/* Company Assets Grid */}
+                    {isExpanded && (
+                      <div className="border-t border-gray-200 p-6 bg-gray-50">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {companyAssets.map((asset) => (
+                            <AssetCard
+                              key={asset.id}
+                              asset={asset}
+                              view="grid"
+                              selected={selectedAssets.has(asset.id)}
+                              onSelect={handleSelectAsset}
+                              onQuickAction={handleQuickAction}
+                              showCheckbox={false}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {/* Pagination */}
         {!loading && assets.length > 0 && totalPages > 1 && (

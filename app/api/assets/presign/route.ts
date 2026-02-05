@@ -214,7 +214,8 @@ export const POST = withAuth(async (request, { user }) => {
       expiresIn: 3600, // 1 hour
     });
 
-    // Update asset with storage URL
+    // The uploadResponse.storageUrl now contains the correct full path
+    // Update asset with the actual storage URL
     await prisma.asset.update({
       where: { id: asset.id },
       data: { storageUrl: uploadResponse.storageUrl },
