@@ -253,7 +253,7 @@ export function NotificationDropdown({
                           {notification.message}
                         </p>
                       )}
-                      <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">
+                      <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">
                         {formatRelativeTime(notification.createdAt)}
                       </p>
                     </div>

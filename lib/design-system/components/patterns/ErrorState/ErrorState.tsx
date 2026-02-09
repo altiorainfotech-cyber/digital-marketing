@@ -72,7 +72,7 @@ export function ErrorState({
         {title}
       </h3>
       
-      <p className="text-sm text-neutral-600 dark:text-neutral-400 max-w-md mb-6">
+      <p className="text-sm text-neutral-700 dark:text-neutral-300 max-w-md mb-6">
         {message}
       </p>
       

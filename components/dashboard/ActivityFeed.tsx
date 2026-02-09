@@ -59,10 +59,10 @@ export function ActivityFeed({ activities, maxItems = 5 }: ActivityFeedProps) {
               <p className="text-sm font-medium text-gray-900 dark:text-white">
                 {activity.title}
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
                 {activity.description}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-500 mt-1 flex items-center gap-1">
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-1">
                 <Clock size={12} />
                 {formatTimestamp(activity.timestamp)}
               </p>

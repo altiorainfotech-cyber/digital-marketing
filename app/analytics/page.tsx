@@ -300,7 +300,7 @@ function AnalyticsContent() {
   if (loading) {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="text-neutral-500">Loading analytics...</div>
+        <div className="text-neutral-600 dark:text-neutral-400">Loading analytics...</div>
       </div>
     );
   }
@@ -354,7 +354,7 @@ function AnalyticsContent() {
                   <span className={`text-sm font-medium ${metrics.assetTrend >= 0 ? 'text-success-600' : 'text-error-600'}`}>
                     {Math.abs(metrics.assetTrend).toFixed(1)}%
                   </span>
-                  <span className="text-sm text-neutral-500 ml-1">vs previous period</span>
+                  <span className="text-sm text-neutral-600 dark:text-neutral-400 ml-1">vs previous period</span>
                 </div>
               </div>
               <div className="p-3 bg-primary-100 rounded-lg">
@@ -369,7 +369,7 @@ function AnalyticsContent() {
               <div>
                 <p className="text-sm font-medium text-neutral-600">New Assets</p>
                 <p className="text-3xl font-bold text-neutral-900 mt-2">{metrics.newAssets}</p>
-                <p className="text-sm text-neutral-500 mt-2">In selected period</p>
+                <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-2">In selected period</p>
               </div>
               <div className="p-3 bg-success-100 rounded-lg">
                 <Upload className="w-6 h-6 text-success-600" />
@@ -392,7 +392,7 @@ function AnalyticsContent() {
                   <span className={`text-sm font-medium ${metrics.usageTrend >= 0 ? 'text-success-600' : 'text-error-600'}`}>
                     {Math.abs(metrics.usageTrend).toFixed(1)}%
                   </span>
-                  <span className="text-sm text-neutral-500 ml-1">vs previous period</span>
+                  <span className="text-sm text-neutral-600 dark:text-neutral-400 ml-1">vs previous period</span>
                 </div>
               </div>
               <div className="p-3 bg-warning-100 rounded-lg">
@@ -407,7 +407,7 @@ function AnalyticsContent() {
               <div>
                 <p className="text-sm font-medium text-neutral-600">Active Users</p>
                 <p className="text-3xl font-bold text-neutral-900 mt-2">{metrics.uniqueUsers}</p>
-                <p className="text-sm text-neutral-500 mt-2">Unique contributors</p>
+                <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-2">Unique contributors</p>
               </div>
               <div className="p-3 bg-info-100 rounded-lg">
                 <Users className="w-6 h-6 text-info-600" />
@@ -470,25 +470,25 @@ function AnalyticsContent() {
         <Card>
           <h2 className="text-lg font-semibold text-neutral-900 mb-4">Recent Activity</h2>
           {filteredUsages.length === 0 ? (
-            <p className="text-sm text-neutral-500">No activity records found for the selected period.</p>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">No activity records found for the selected period.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-neutral-200">
                 <thead className="bg-neutral-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
                       Asset
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
                       Platform
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
                       Campaign
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
                       Date
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
                       User
                     </th>
                   </tr>
@@ -512,10 +512,10 @@ function AnalyticsContent() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-900">
                         {usage.campaignName}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600 dark:text-neutral-400">
                         {new Date(usage.usedAt).toLocaleDateString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600 dark:text-neutral-400">
                         {usage.loggedBy?.name || 'Unknown'}
                       </td>
                     </tr>
@@ -523,7 +523,7 @@ function AnalyticsContent() {
                 </tbody>
               </table>
               {filteredUsages.length > 20 && (
-                <div className="px-6 py-4 text-sm text-neutral-500 text-center border-t border-neutral-200">
+                <div className="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400 text-center border-t border-neutral-200">
                   Showing 20 of {filteredUsages.length} records
                 </div>
               )}

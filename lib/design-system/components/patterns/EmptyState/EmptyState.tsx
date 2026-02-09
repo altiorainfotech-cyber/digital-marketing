@@ -46,7 +46,7 @@ export function EmptyState({
       aria-live="polite"
     >
       {icon && (
-        <div className="mb-4 text-neutral-400 dark:text-neutral-600" aria-hidden="true">
+        <div className="mb-4 text-neutral-500 dark:text-neutral-400" aria-hidden="true">
           {icon}
         </div>
       )}
@@ -56,7 +56,7 @@ export function EmptyState({
       </h3>
       
       {message && (
-        <p className="text-sm text-neutral-600 dark:text-neutral-400 max-w-md mb-6">
+        <p className="text-sm text-neutral-700 dark:text-neutral-300 max-w-md mb-6">
           {message}
         </p>
       )}

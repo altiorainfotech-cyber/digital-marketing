@@ -241,13 +241,20 @@ function AssetDetailContent() {
   }, [assetId, asset]);
 
   const handleDownload = async () => {
+    console.log('[AssetDetail] Download button clicked', { 
+      userRole: user?.role, 
+      isSEOSpecialist: user?.role === UserRole.SEO_SPECIALIST 
+    });
+    
     // Check if user is SEO_SPECIALIST - they must select platforms first
     if (user?.role === UserRole.SEO_SPECIALIST) {
+      console.log('[AssetDetail] Opening platform modal for SEO_SPECIALIST');
       setShowPlatformModal(true);
       return;
     }
     
     // For other users, proceed with direct download
+    console.log('[AssetDetail] Direct download for non-SEO user');
     await performDownload([]);
   };
 
@@ -389,10 +396,12 @@ function AssetDetailContent() {
                   Share
                 </Button>
               )}
+              {/* Download button - always visible for all users */}
               <Button
                 variant="primary"
                 icon={<Download className="w-4 h-4" />}
                 onClick={handleDownload}
+                className="flex-shrink-0"
               >
                 Download
               </Button>
@@ -464,9 +473,9 @@ function AssetDetailContent() {
                     />
                   ) : (
                     <div className="text-center p-4">
-                      <FileType className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600 mb-2">Image preview not available</p>
-                      <p className="text-xs text-gray-500">R2_PUBLIC_URL may not be configured</p>
+                      <FileType className="w-16 h-16 text-gray-500 dark:text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-700 dark:text-gray-300 mb-2">Image preview not available</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">R2_PUBLIC_URL may not be configured</p>
                     </div>
                   )
                 ) : asset.assetType === AssetType.VIDEO ? (
@@ -497,29 +506,29 @@ function AssetDetailContent() {
                     </video>
                   ) : (
                     <div className="text-center p-4">
-                      <FileType className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600 mb-2">Video preview not available</p>
-                      <p className="text-xs text-gray-500">R2_PUBLIC_URL may not be configured</p>
+                      <FileType className="w-16 h-16 text-gray-500 dark:text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-700 dark:text-gray-300 mb-2">Video preview not available</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">R2_PUBLIC_URL may not be configured</p>
                     </div>
                   )
                 ) : asset.assetType === AssetType.LINK ? (
                   <div className="text-center">
-                    <Eye className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">Link Asset</p>
+                    <Eye className="w-16 h-16 text-gray-500 dark:text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-700 dark:text-gray-300">Link Asset</p>
                     <a
                       href={asset.storageUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 text-sm mt-2 inline-block"
+                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm mt-2 inline-block"
                     >
                       Open Link →
                     </a>
                   </div>
                 ) : (
                   <div className="text-center">
-                    <FileType className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">Document Asset</p>
-                    <p className="text-xs text-gray-500 mt-2">Use download button to view</p>
+                    <FileType className="w-16 h-16 text-gray-500 dark:text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-700 dark:text-gray-300">Document Asset</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">Use download button to view</p>
                   </div>
                 )}
               </div>
@@ -605,7 +614,7 @@ function AssetDetailContent() {
               )}
 
               {usages.length === 0 ? (
-                <p className="text-sm text-gray-500">No platform usage recorded yet.</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">No platform usage recorded yet.</p>
               ) : (
                 <div className="space-y-3">
                   {usages.map((usage) => (
@@ -626,7 +635,7 @@ function AssetDetailContent() {
                             </a>
                           )}
                         </div>
-                        <span className="text-xs text-gray-500">{formatDate(usage.usedAt)}</span>
+                        <span className="text-xs text-gray-600 dark:text-gray-400">{formatDate(usage.usedAt)}</span>
                       </div>
                     </div>
                   ))}
@@ -645,14 +654,14 @@ function AssetDetailContent() {
                       className="flex justify-between items-center py-3 border-b border-gray-200 last:border-0"
                     >
                       <div>
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           Version {version.versionNumber}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
                           Size: {formatFileSize(version.fileSize)}
                         </p>
                       </div>
-                      <span className="text-xs text-gray-500">{formatDate(version.createdAt)}</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">{formatDate(version.createdAt)}</span>
                     </div>
                   ))}
                 </div>
@@ -667,78 +676,78 @@ function AssetDetailContent() {
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Details</h2>
               <dl className="space-y-4">
                 <div>
-                  <dt className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                  <dt className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-1">
                     <FileType className="w-4 h-4" />
                     Asset Type
                   </dt>
-                  <dd className="text-sm font-medium text-gray-900">{asset.assetType}</dd>
+                  <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{asset.assetType}</dd>
                 </div>
 
                 <div>
-                  <dt className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                  <dt className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-1">
                     <FileType className="w-4 h-4" />
                     Upload Type
                   </dt>
-                  <dd className="text-sm font-medium text-gray-900">{asset.uploadType}</dd>
+                  <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{asset.uploadType}</dd>
                 </div>
 
                 <div>
-                  <dt className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                  <dt className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-1">
                     <HardDrive className="w-4 h-4" />
                     File Size
                   </dt>
-                  <dd className="text-sm font-medium text-gray-900">
+                  <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">
                     {formatFileSize(asset.fileSize)}
                   </dd>
                 </div>
 
                 {asset.mimeType && (
                   <div>
-                    <dt className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                    <dt className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-1">
                       <FileType className="w-4 h-4" />
                       MIME Type
                     </dt>
-                    <dd className="text-sm font-medium text-gray-900">{asset.mimeType}</dd>
+                    <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{asset.mimeType}</dd>
                   </div>
                 )}
 
                 <div>
-                  <dt className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                  <dt className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-1">
                     <User className="w-4 h-4" />
                     Uploader
                   </dt>
-                  <dd className="text-sm font-medium text-gray-900">
+                  <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">
                     {asset.uploader?.name || 'Unknown'}
                   </dd>
                 </div>
 
                 {asset.company && (
                   <div>
-                    <dt className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                    <dt className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-1">
                       <Building2 className="w-4 h-4" />
                       Company
                     </dt>
-                    <dd className="text-sm font-medium text-gray-900">{asset.company.name}</dd>
+                    <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{asset.company.name}</dd>
                   </div>
                 )}
 
                 <div>
-                  <dt className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                  <dt className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-1">
                     <Calendar className="w-4 h-4" />
                     Uploaded
                   </dt>
-                  <dd className="text-sm font-medium text-gray-900">
+                  <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">
                     {formatDate(asset.uploadedAt)}
                   </dd>
                 </div>
 
                 {asset.approvedAt && (
                   <div>
-                    <dt className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                    <dt className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-1">
                       <CheckCircle className="w-4 h-4" />
                       Approved
                     </dt>
-                    <dd className="text-sm font-medium text-gray-900">
+                    <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">
                       {formatDate(asset.approvedAt)}
                     </dd>
                   </div>
@@ -793,16 +802,16 @@ function AssetDetailContent() {
                       className="flex justify-between items-center py-2 text-sm"
                     >
                       <div>
-                        <p className="font-medium text-gray-900">
+                        <p className="font-medium text-gray-900 dark:text-gray-100">
                           {download.downloadedBy?.name || 'Unknown User'}
                         </p>
                         {download.platformIntent && (
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-gray-600 dark:text-gray-400">
                             Platform: {download.platformIntent}
                           </p>
                         )}
                       </div>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-600 dark:text-gray-400">
                         {formatDate(download.downloadedAt)}
                       </span>
                     </div>

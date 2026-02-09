@@ -148,8 +148,9 @@ function AssetUploadContent() {
   };
 
   const validateForm = (): string | null => {
-    if (!companyId) {
-      return 'Company is required';
+    // Company is only required for SEO uploads
+    if (uploadType === UploadType.SEO && !companyId) {
+      return 'Company is required for SEO/Digital Marketing uploads';
     }
 
     if (assetType === AssetType.LINK && !url.trim()) {
@@ -180,7 +181,7 @@ function AssetUploadContent() {
           title: title || file.name, // Use filename if title is empty
           assetType,
           uploadType,
-          companyId,
+          companyId: uploadType === UploadType.SEO ? companyId : undefined, // Only send companyId for SEO uploads
           fileName: file.name,
           contentType: file.type,
           visibility: isAdmin && visibility ? visibility : undefined,
@@ -280,7 +281,7 @@ function AssetUploadContent() {
             title: title || 'Untitled Link', // Use default if title is empty
             assetType,
             uploadType,
-            companyId,
+            companyId: uploadType === UploadType.SEO ? companyId : undefined, // Only send companyId for SEO uploads
             url,
             submitForReview: uploadType === UploadType.SEO ? submitForReview : undefined,
             visibility: isAdmin && visibility ? visibility : undefined,
@@ -423,24 +424,26 @@ function AssetUploadContent() {
               />
             </div>
 
-            {/* Company - Required for all users */}
-            <div className="mb-6">
-              {loadingCompanies ? (
-                <div className="text-sm text-gray-500">Loading companies...</div>
-              ) : (
-                <Select
-                  label="Company"
-                  value={companyId}
-                  onChange={(e) => setCompanyId(e.target.value)}
-                  options={[
-                    { value: '', label: 'Select a company' },
-                    ...companies.map(c => ({ value: c.id, label: c.name })),
-                  ]}
-                  fullWidth
-                  required
-                />
-              )}
-            </div>
+            {/* Company - Required for SEO uploads only */}
+            {uploadType === UploadType.SEO && (
+              <div className="mb-6">
+                {loadingCompanies ? (
+                  <div className="text-sm text-gray-500">Loading companies...</div>
+                ) : (
+                  <Select
+                    label="Company"
+                    value={companyId}
+                    onChange={(e) => setCompanyId(e.target.value)}
+                    options={[
+                      { value: '', label: 'Select a company' },
+                      ...companies.map(c => ({ value: c.id, label: c.name })),
+                    ]}
+                    fullWidth
+                    required
+                  />
+                )}
+              </div>
+            )}
 
             {/* Title - Optional */}
             <div className="mb-6">

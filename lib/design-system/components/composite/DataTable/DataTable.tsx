@@ -195,7 +195,7 @@ export function DataTable<T extends { id: string }>({
         className={`flex flex-col items-center justify-center py-12 ${className}`}
         data-testid={testId}
       >
-        <p className="text-neutral-500 dark:text-neutral-400">{emptyMessage}</p>
+        <p className="text-neutral-600 dark:text-neutral-300">{emptyMessage}</p>
       </div>
     );
   }
@@ -229,7 +229,7 @@ export function DataTable<T extends { id: string }>({
                 <div className="flex items-center gap-2">
                   {column.header}
                   {column.sortable && (
-                    <span className="text-neutral-400">
+                    <span className="text-neutral-500 dark:text-neutral-400">
                       {sortKey === column.key ? (
                         sortDirection === 'asc' ? (
                           <Icon size={16}>
@@ -292,7 +292,7 @@ export function DataTable<T extends { id: string }>({
             )}
             {columns.map((column) => (
               <div key={column.key}>
-                <div className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1">
+                <div className="text-xs font-semibold text-neutral-600 dark:text-neutral-300 mb-1">
                   {column.header}
                 </div>
                 <div className="text-sm text-neutral-900 dark:text-neutral-100">

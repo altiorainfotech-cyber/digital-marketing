@@ -18,7 +18,7 @@ export const Label = React.forwardRef<HTMLLabelElement, LabelProps>(
     ref
   ) => {
     const baseStyles = 'block text-sm font-medium transition-colors duration-200';
-    const colorStyles = disabled ? 'text-gray-400' : 'text-gray-700';
+    const colorStyles = disabled ? 'text-gray-500 dark:text-gray-400' : 'text-gray-700 dark:text-gray-300';
     const labelClasses = `${baseStyles} ${colorStyles} ${className}`;
 
     return (

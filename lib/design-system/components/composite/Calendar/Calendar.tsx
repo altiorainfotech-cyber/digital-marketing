@@ -229,7 +229,7 @@ export function Calendar({
         {weekDays.map((day) => (
           <div
             key={day}
-            className="text-center text-xs font-medium text-gray-500 py-2"
+            className="text-center text-xs font-medium text-gray-600 dark:text-gray-400 py-2"
             aria-label={day}
           >
             {day}

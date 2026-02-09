@@ -218,9 +218,9 @@ export function ShareModal({
               Currently Shared With
             </h3>
             {sharesLoading ? (
-              <p className="text-sm text-gray-500">Loading shares...</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">Loading shares...</p>
             ) : shares.length === 0 ? (
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
                 This asset is not shared with anyone yet.
               </p>
             ) : (
@@ -231,13 +231,13 @@ export function ShareModal({
                     className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
                   >
                     <div>
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                         {share.sharedWith?.name || 'Unknown User'}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
                         {share.sharedWith?.email || ''}
                       </p>
-                      <p className="text-xs text-gray-400 mt-1">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         Shared on {new Date(share.createdAt).toLocaleDateString()}
                       </p>
                     </div>
@@ -280,7 +280,7 @@ export function ShareModal({
             {/* User List */}
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {filteredUsers.length === 0 ? (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
                   {searchQuery
                     ? 'No users found matching your search.'
                     : 'No users available to share with.'}
@@ -298,9 +298,9 @@ export function ShareModal({
                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
                     <div className="ml-3">
-                      <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                      <p className="text-xs text-gray-500">{user.email}</p>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.name}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">{user.email}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         {user.role.replace('_', ' ')}
                         {user.companyId && ' • Company User'}
                       </p>

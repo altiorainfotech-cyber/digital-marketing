@@ -12,6 +12,8 @@
  * @param filename - Suggested filename for the download
  */
 export function triggerDownload(url: string, filename?: string): void {
+  console.log('[DownloadHelper] Triggering download', { url, filename });
+  
   // Create a temporary anchor element
   const link = document.createElement('a');
   link.href = url;
@@ -27,6 +29,8 @@ export function triggerDownload(url: string, filename?: string): void {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  
+  console.log('[DownloadHelper] Download triggered successfully');
 }
 
 /**
@@ -42,6 +46,8 @@ export async function initiateAssetDownload(
   platforms: string[],
   assetTitle?: string
 ): Promise<{ downloadUrl: string; expiresAt: Date }> {
+  console.log('[DownloadHelper] Initiating asset download', { assetId, platforms, assetTitle });
+  
   const response = await fetch(`/api/assets/${assetId}/download`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -52,10 +58,12 @@ export async function initiateAssetDownload(
     const errorData = await response.json().catch(() => ({ 
       error: 'Failed to generate download URL' 
     }));
+    console.error('[DownloadHelper] Download failed', errorData);
     throw new Error(errorData.error || errorData.details || 'Failed to generate download URL');
   }
 
   const data = await response.json();
+  console.log('[DownloadHelper] Download URL received', { downloadUrl: data.downloadUrl });
   
   if (!data.downloadUrl) {
     throw new Error('No download URL received from server');

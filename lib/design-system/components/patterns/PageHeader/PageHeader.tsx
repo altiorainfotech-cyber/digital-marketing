@@ -48,7 +48,7 @@ export function PageHeader({
             {title}
           </h1>
           {subtitle && (
-            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="mt-1 text-sm text-neutral-700 dark:text-neutral-300">
               {subtitle}
             </p>
           )}

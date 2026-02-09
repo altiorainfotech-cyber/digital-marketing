@@ -85,14 +85,14 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           </select>
 
           {/* Chevron Icon */}
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none">
             <ChevronDown size={20} />
           </div>
         </div>
 
         {/* Helper Text */}
         {helperText && !error && (
-          <p className="mt-1 text-sm text-gray-500">{helperText}</p>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{helperText}</p>
         )}
 
         {/* Error Message */}
