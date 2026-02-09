@@ -43,20 +43,11 @@ export function PlatformDownloadModal({
   if (!isOpen) return null;
 
   const handlePlatformToggle = (platform: Platform) => {
-    const updatedPlatforms = selectedPlatforms.includes(platform)
-      ? selectedPlatforms.filter((p) => p !== platform)
-      : [...selectedPlatforms, platform];
-    
-    setSelectedPlatforms(updatedPlatforms);
-    
-    // Auto-download when at least one platform is selected
-    if (updatedPlatforms.length > 0) {
-      // Small delay to show the selection visually before download starts
-      setTimeout(() => {
-        onConfirm(updatedPlatforms);
-        setSelectedPlatforms([]); // Reset for next time
-      }, 300);
-    }
+    setSelectedPlatforms((prev) =>
+      prev.includes(platform)
+        ? prev.filter((p) => p !== platform)
+        : [...prev, platform]
+    );
   };
 
   const handleConfirm = () => {
@@ -95,10 +86,10 @@ export function PlatformDownloadModal({
               id="platform-modal-title"
               className="text-xl font-semibold text-gray-900"
             >
-              Select Platform to Download
+              Select Platforms for Download
             </h2>
             <p className="text-sm text-gray-600 mt-1">
-              <span className="font-medium">{assetTitle}</span> - Auto-downloads on selection
+              Choose where you plan to use: <span className="font-medium">{assetTitle}</span>
             </p>
           </div>
           <button
@@ -114,11 +105,11 @@ export function PlatformDownloadModal({
         <div className="flex-1 overflow-y-auto p-6">
           <div className="mb-4">
             <p className="text-sm text-gray-700 mb-4">
-              Select platforms where you intend to use this asset. <strong>Download will start automatically</strong> once you make your selection.
+              Select one or more platforms where you intend to use this asset. This helps us track asset usage and optimize content for different channels.
             </p>
             {selectedPlatforms.length === 0 && (
-              <p className="text-sm text-blue-600 font-medium">
-                💡 Click on any platform below to start downloading
+              <p className="text-sm text-red-600 font-medium">
+                ⚠️ You must select at least one platform to download this asset.
               </p>
             )}
           </div>

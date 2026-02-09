@@ -20,8 +20,8 @@ export function triggerDownload(url: string, filename?: string): void {
     link.download = filename; // Suggest filename
   }
   
-  link.target = '_blank';
-  link.rel = 'noopener noreferrer';
+  // Don't use target="_blank" - it opens in new tab instead of downloading
+  // The download attribute will trigger a download instead
   
   // Append to body, click, and remove
   document.body.appendChild(link);
