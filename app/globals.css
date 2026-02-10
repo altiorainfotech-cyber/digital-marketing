@@ -359,3 +359,68 @@ body {
   }
 }
 
+/* Assets Page Text Color Fixes */
+/* Fix all text colors on assets pages to use proper dark colors */
+.assets-page h1,
+.assets-page h2,
+.assets-page h3,
+.assets-page h4,
+.assets-page h5,
+.assets-page h6 {
+  color: #171717 !important; /* neutral-900 */
+}
+
+.assets-page p,
+.assets-page span:not(.lucide):not([class*="icon"]),
+.assets-page div,
+.assets-page label,
+.assets-page dt,
+.assets-page dd,
+.assets-page th,
+.assets-page td {
+  color: #404040 !important; /* neutral-700 */
+}
+
+.assets-page .text-sm {
+  color: #525252 !important; /* neutral-600 */
+}
+
+.assets-page .text-xs {
+  color: #737373 !important; /* neutral-500 */
+}
+
+/* Fix button text colors on assets pages */
+.assets-page button {
+  color: #171717 !important;
+}
+
+/* Download button should have black background and white text */
+.assets-page button[class*="primary"],
+.assets-page button[class*="Primary"] {
+  background-color: #171717 !important;
+  color: #ffffff !important;
+  border-color: #171717 !important;
+}
+
+.assets-page button[class*="primary"]:hover,
+.assets-page button[class*="Primary"]:hover {
+  background-color: #262626 !important;
+  border-color: #262626 !important;
+}
+
+/* Fix link colors */
+.assets-page a {
+  color: #2563eb !important; /* primary-600 */
+}
+
+.assets-page a:hover {
+  color: #1d4ed8 !important; /* primary-700 */
+}
+
+/* Fix input text colors */
+.assets-page input,
+.assets-page select,
+.assets-page textarea {
+  color: #171717 !important;
+}
+

@@ -60,7 +60,9 @@ function PendingApprovalsContent() {
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [showRejectionModal, setShowRejectionModal] = useState(false);
+  const [showBulkRejectionModal, setShowBulkRejectionModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [bulkRejectionReason, setBulkRejectionReason] = useState('');
   const [newVisibility, setNewVisibility] = useState<VisibilityLevel | 'SEO_SPECIALIST' | 'CONTENT_CREATOR'>(VisibilityLevel.COMPANY);
   const [processing, setProcessing] = useState(false);
   
@@ -70,6 +72,7 @@ function PendingApprovalsContent() {
   // Filters
   const [filterType, setFilterType] = useState<string>('');
   const [filterCompany, setFilterCompany] = useState<string>('');
+  const [filterDate, setFilterDate] = useState<string>('');
 
   // Asset preview URLs
   const [assetPreviewUrls, setAssetPreviewUrls] = useState<Record<string, string>>({});
@@ -118,8 +121,37 @@ function PendingApprovalsContent() {
       filtered = filtered.filter((asset) => asset.companyId === filterCompany);
     }
 
+    if (filterDate) {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      filtered = filtered.filter((asset) => {
+        const uploadDate = new Date(asset.uploadedAt);
+        const uploadDateOnly = new Date(uploadDate.getFullYear(), uploadDate.getMonth(), uploadDate.getDate());
+        
+        switch (filterDate) {
+          case 'today':
+            return uploadDateOnly.getTime() === today.getTime();
+          case 'yesterday':
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            return uploadDateOnly.getTime() === yesterday.getTime();
+          case 'last7days':
+            const sevenDaysAgo = new Date(today);
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            return uploadDateOnly >= sevenDaysAgo;
+          case 'last30days':
+            const thirtyDaysAgo = new Date(today);
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            return uploadDateOnly >= thirtyDaysAgo;
+          default:
+            return true;
+        }
+      });
+    }
+
     setFilteredAssets(filtered);
-  }, [assets, filterType, filterCompany]);
+  }, [assets, filterType, filterCompany, filterDate]);
 
   const fetchPendingAssets = async () => {
     try {
@@ -212,6 +244,44 @@ function PendingApprovalsContent() {
     }
   };
 
+  const handleBulkRejectConfirm = async () => {
+    if (selectedAssetIds.size === 0 || !bulkRejectionReason.trim()) {
+      setError('Rejection reason is required');
+      return;
+    }
+    
+    setError(null);
+    setProcessing(true);
+
+    try {
+      const promises = Array.from(selectedAssetIds).map((id) =>
+        fetch(`/api/assets/${id}/reject`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason: bulkRejectionReason.trim() }),
+        })
+      );
+
+      const results = await Promise.allSettled(promises);
+      
+      // Check if any rejections failed
+      const failedCount = results.filter(r => r.status === 'rejected').length;
+      
+      if (failedCount > 0) {
+        setError(`Failed to reject ${failedCount} of ${selectedAssetIds.size} assets`);
+      }
+
+      setShowBulkRejectionModal(false);
+      setBulkRejectionReason('');
+      setSelectedAssetIds(new Set());
+      fetchPendingAssets();
+    } catch (err) {
+      setError('Failed to reject some assets');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const handleBulkApprove = async () => {
     if (selectedAssetIds.size === 0) return;
     
@@ -235,6 +305,13 @@ function PendingApprovalsContent() {
     } finally {
       setProcessing(false);
     }
+  };
+
+  const handleBulkReject = async () => {
+    if (selectedAssetIds.size === 0) return;
+    
+    // Open bulk rejection modal
+    setShowBulkRejectionModal(true);
   };
 
   const openApprovalModal = (asset: Asset) => {
@@ -397,6 +474,14 @@ function PendingApprovalsContent() {
     { value: AssetType.LINK, label: 'Links' },
   ];
 
+  const dateFilterOptions: SelectOption[] = [
+    { value: '', label: 'All Dates' },
+    { value: 'today', label: 'Today' },
+    { value: 'yesterday', label: 'Yesterday' },
+    { value: 'last7days', label: 'Last 7 Days' },
+    { value: 'last30days', label: 'Last 30 Days' },
+  ];
+
   const uniqueCompanies = Array.from(
     new Map(
       assets
@@ -413,7 +498,7 @@ function PendingApprovalsContent() {
     })),
   ];
 
-  const hasActiveFilters = filterType || filterCompany;
+  const hasActiveFilters = filterType || filterCompany || filterDate;
   const hasSelection = selectedAssetIds.size > 0;
 
   return (
@@ -437,9 +522,9 @@ function PendingApprovalsContent() {
 
       {/* Filters and Bulk Actions */}
       <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-800 p-4">
-        <div className="flex flex-col lg:flex-row gap-4">
-          {/* Filters */}
-          <div className="flex-1 flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col gap-4">
+          {/* Filters Row */}
+          <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <Select
                 options={typeFilterOptions}
@@ -456,6 +541,14 @@ function PendingApprovalsContent() {
                 fullWidth
               />
             </div>
+            <div className="flex-1">
+              <Select
+                options={dateFilterOptions}
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
+                fullWidth
+              />
+            </div>
             {hasActiveFilters && (
               <Button
                 variant="ghost"
@@ -463,6 +556,7 @@ function PendingApprovalsContent() {
                 onClick={() => {
                   setFilterType('');
                   setFilterCompany('');
+                  setFilterDate('');
                 }}
               >
                 Clear
@@ -470,9 +564,9 @@ function PendingApprovalsContent() {
             )}
           </div>
 
-          {/* Bulk Actions */}
+          {/* Bulk Actions Row */}
           {hasSelection && (
-            <div className="flex items-center gap-3 border-l border-neutral-200 dark:border-neutral-700 pl-4">
+            <div className="flex items-center gap-3 pt-3 border-t border-neutral-200 dark:border-neutral-700">
               <span className="text-sm text-neutral-600 dark:text-neutral-400">
                 {selectedAssetIds.size} selected
               </span>
@@ -486,11 +580,20 @@ function PendingApprovalsContent() {
                 Approve All
               </Button>
               <Button
+                variant="danger"
+                size="sm"
+                icon={<XCircle className="w-4 h-4" />}
+                onClick={handleBulkReject}
+                disabled={processing}
+              >
+                Reject All
+              </Button>
+              <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSelectedAssetIds(new Set())}
               >
-                Clear
+                Clear Selection
               </Button>
             </div>
           )}
@@ -736,6 +839,56 @@ function PendingApprovalsContent() {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Bulk Rejection Modal */}
+      <Modal
+        isOpen={showBulkRejectionModal}
+        onClose={() => setShowBulkRejectionModal(false)}
+        title="Reject Multiple Assets"
+        size="md"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="ghost"
+              onClick={() => setShowBulkRejectionModal(false)}
+              disabled={processing}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleBulkRejectConfirm}
+              loading={processing}
+              disabled={!bulkRejectionReason.trim()}
+            >
+              Reject {selectedAssetIds.size} Assets
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-neutral-700 dark:text-neutral-300">
+            You are rejecting <strong>{selectedAssetIds.size} assets</strong>. This action will apply the same rejection reason to all selected assets.
+          </p>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              Rejection Reason *
+            </label>
+            <textarea
+              required
+              value={bulkRejectionReason}
+              onChange={(e) => setBulkRejectionReason(e.target.value)}
+              rows={4}
+              placeholder="Explain why these assets are being rejected..."
+              className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
+            />
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+              All uploaders will see this reason
+            </p>
+          </div>
+        </div>
       </Modal>
     </div>
   );
