@@ -57,9 +57,11 @@ function AssetListContent() {
   // State
   const [assets, setAssets] = useState<AssetCardData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [limit] = useState(20);
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'company'>('grid');
   const [showFilters, setShowFilters] = useState(true);
@@ -83,11 +85,12 @@ function AssetListContent() {
 
   const isAdmin = user?.role === UserRole.ADMIN;
 
-  // Debounced search
+  // Debounced search - reset page and assets on filter change
   useEffect(() => {
     const timer = setTimeout(() => {
       setFilters(prev => ({ ...prev, query: searchInput }));
       setPage(1);
+      setAssets([]); // Clear assets on new search
     }, 500);
 
     return () => clearTimeout(timer);
@@ -112,10 +115,14 @@ function AssetListContent() {
     }
   }, [isAdmin]);
 
-  // Load assets
+  // Load assets with infinite scroll support
   useEffect(() => {
     const fetchAssets = async () => {
-      setLoading(true);
+      if (page === 1) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
       setError('');
 
       try {
@@ -139,22 +146,50 @@ function AssetListContent() {
         }
 
         const data = await response.json();
-        setAssets(data.assets || []);
+        
+        if (page === 1) {
+          setAssets(data.assets || []);
+        } else {
+          setAssets(prev => [...prev, ...(data.assets || [])]);
+        }
+        
         setTotal(data.total || 0);
+        setHasMore((data.assets || []).length === limit);
       } catch (err: any) {
         setError(err.message || 'Failed to load assets');
       } finally {
         setLoading(false);
+        setLoadingMore(false);
       }
     };
 
     fetchAssets();
   }, [page, limit, filters]);
 
+  // Infinite scroll handler
+  useEffect(() => {
+    const handleScroll = () => {
+      if (loadingMore || !hasMore || loading) return;
+
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight;
+      const clientHeight = window.innerHeight;
+
+      // Load more when user is 300px from bottom
+      if (scrollTop + clientHeight >= scrollHeight - 300) {
+        setPage(prev => prev + 1);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loadingMore, hasMore, loading]);
+
   // Filter handlers
   const handleFilterChange = (key: keyof SearchFilters, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
     setPage(1);
+    setAssets([]); // Clear assets on filter change
   };
 
   const clearFilter = (key: keyof SearchFilters) => {
@@ -181,6 +216,7 @@ function AssetListContent() {
       date: '',
     });
     setPage(1);
+    setAssets([]); // Clear assets on filter clear
   };
 
   // Selection handlers
@@ -201,6 +237,48 @@ function AssetListContent() {
       setSelectedAssets(new Set(assets.map(a => a.id)));
     } else {
       setSelectedAssets(new Set());
+    }
+  };
+
+  // Delete handler - CONTENT_CREATOR can delete DRAFT and PENDING assets
+  const handleDeleteSelected = async () => {
+    if (selectedAssets.size === 0) return;
+
+    const assetsToDelete = assets.filter(a => selectedAssets.has(a.id));
+    
+    // For CONTENT_CREATOR, only allow deleting DRAFT and PENDING_REVIEW assets
+    if (user?.role === UserRole.CONTENT_CREATOR) {
+      const nonDeletableAssets = assetsToDelete.filter(
+        a => a.status !== AssetStatus.DRAFT && a.status !== AssetStatus.PENDING_REVIEW
+      );
+      if (nonDeletableAssets.length > 0) {
+        setError('Content creators can only delete draft and pending assets');
+        return;
+      }
+    }
+
+    if (!confirm(`Are you sure you want to delete ${selectedAssets.size} asset(s)?`)) {
+      return;
+    }
+
+    try {
+      const deletePromises = Array.from(selectedAssets).map(assetId =>
+        fetch(`/api/assets/${assetId}`, { method: 'DELETE' })
+      );
+
+      const results = await Promise.all(deletePromises);
+      const failedDeletes = results.filter(r => !r.ok);
+
+      if (failedDeletes.length > 0) {
+        throw new Error(`Failed to delete ${failedDeletes.length} asset(s)`);
+      }
+
+      // Remove deleted assets from state
+      setAssets(prev => prev.filter(a => !selectedAssets.has(a.id)));
+      setSelectedAssets(new Set());
+      setTotal(prev => prev - selectedAssets.size);
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete assets');
     }
   };
 
@@ -254,8 +332,6 @@ function AssetListContent() {
     filters.companyId,
     filters.date,
   ].filter(Boolean).length;
-
-  const totalPages = Math.ceil(total / limit);
 
   return (
     <div className="assets-page min-h-screen bg-gray-50">
@@ -526,8 +602,37 @@ function AssetListContent() {
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-            {error}
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex justify-between items-center">
+            <span>{error}</span>
+            <button onClick={() => setError('')} className="text-red-900 hover:text-red-700">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Bulk Actions Bar */}
+        {selectedAssets.size > 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium text-blue-900">
+                {selectedAssets.size} asset{selectedAssets.size !== 1 ? 's' : ''} selected
+              </span>
+              <button
+                onClick={() => setSelectedAssets(new Set())}
+                className="text-sm text-blue-700 hover:text-blue-900 underline"
+              >
+                Clear selection
+              </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={handleDeleteSelected}
+              >
+                Delete Selected
+              </Button>
+            </div>
           </div>
         )}
 
@@ -560,62 +665,80 @@ function AssetListContent() {
 
         {/* Grid View */}
         {!loading && assets.length > 0 && viewMode === 'grid' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {assets.map((asset) => (
-              <AssetCard
-                key={asset.id}
-                asset={asset}
-                view="grid"
-                selected={selectedAssets.has(asset.id)}
-                onSelect={handleSelectAsset}
-                onQuickAction={handleQuickAction}
-                showCheckbox={false}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {assets.map((asset) => (
+                <AssetCard
+                  key={asset.id}
+                  asset={asset}
+                  view="grid"
+                  selected={selectedAssets.has(asset.id)}
+                  onSelect={handleSelectAsset}
+                  onQuickAction={handleQuickAction}
+                  showCheckbox={true}
+                />
+              ))}
+            </div>
+            {loadingMore && (
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <SkeletonCard key={i} />
+                ))}
+              </div>
+            )}
+          </>
         )}
 
         {/* List View */}
         {!loading && assets.length > 0 && viewMode === 'list' && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Asset
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Size
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Uploaded
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {assets.map((asset) => (
-                  <AssetCard
-                    key={asset.id}
-                    asset={asset}
-                    view="list"
-                    selected={selectedAssets.has(asset.id)}
-                    onSelect={handleSelectAsset}
-                    onQuickAction={handleQuickAction}
-                    showCheckbox={false}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Asset
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Size
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Uploaded
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {assets.map((asset) => (
+                    <AssetCard
+                      key={asset.id}
+                      asset={asset}
+                      view="list"
+                      selected={selectedAssets.has(asset.id)}
+                      onSelect={handleSelectAsset}
+                      onQuickAction={handleQuickAction}
+                      showCheckbox={true}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {loadingMore && (
+              <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* Company Folder View */}
@@ -633,86 +756,82 @@ function AssetListContent() {
           const sortedCompanyNames = Object.keys(assetsByCompany).sort();
 
           return (
-            <div className="space-y-4">
-              {sortedCompanyNames.map((companyName) => {
-                const companyAssets = assetsByCompany[companyName];
-                const isExpanded = expandedCompanies.has(companyName);
+            <>
+              <div className="space-y-4">
+                {sortedCompanyNames.map((companyName) => {
+                  const companyAssets = assetsByCompany[companyName];
+                  const isExpanded = expandedCompanies.has(companyName);
 
-                return (
-                  <div key={companyName} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                    {/* Company Folder Header */}
-                    <button
-                      onClick={() => {
-                        const newExpanded = new Set(expandedCompanies);
-                        if (isExpanded) {
-                          newExpanded.delete(companyName);
-                        } else {
-                          newExpanded.add(companyName);
-                        }
-                        setExpandedCompanies(newExpanded);
-                      }}
-                      className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <svg 
-                          className={`w-5 h-5 text-gray-500 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-                          fill="none" 
-                          stroke="currentColor" 
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                        <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                        </svg>
-                        <div className="text-left">
-                          <h3 className="text-lg font-semibold text-gray-900">{companyName}</h3>
-                          <p className="text-sm text-gray-500">{companyAssets.length} asset{companyAssets.length !== 1 ? 's' : ''}</p>
+                  return (
+                    <div key={companyName} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                      {/* Company Folder Header */}
+                      <button
+                        onClick={() => {
+                          const newExpanded = new Set(expandedCompanies);
+                          if (isExpanded) {
+                            newExpanded.delete(companyName);
+                          } else {
+                            newExpanded.add(companyName);
+                          }
+                          setExpandedCompanies(newExpanded);
+                        }}
+                        className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <svg 
+                            className={`w-5 h-5 text-gray-500 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                          <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                          </svg>
+                          <div className="text-left">
+                            <h3 className="text-lg font-semibold text-gray-900">{companyName}</h3>
+                            <p className="text-sm text-gray-500">{companyAssets.length} asset{companyAssets.length !== 1 ? 's' : ''}</p>
+                          </div>
                         </div>
-                      </div>
-                      <Badge variant="primary" size="sm">
-                        {companyAssets.length}
-                      </Badge>
-                    </button>
+                        <Badge variant="primary" size="sm">
+                          {companyAssets.length}
+                        </Badge>
+                      </button>
 
-                    {/* Company Assets Grid */}
-                    {isExpanded && (
-                      <div className="border-t border-gray-200 p-6 bg-gray-50">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          {companyAssets.map((asset) => (
-                            <AssetCard
-                              key={asset.id}
-                              asset={asset}
-                              view="grid"
-                              selected={selectedAssets.has(asset.id)}
-                              onSelect={handleSelectAsset}
-                              onQuickAction={handleQuickAction}
-                              showCheckbox={false}
-                            />
-                          ))}
+                      {/* Company Assets Grid - Always show all when expanded */}
+                      {isExpanded && (
+                        <div className="border-t border-gray-200 p-6 bg-gray-50">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {companyAssets.map((asset) => (
+                              <AssetCard
+                                key={asset.id}
+                                asset={asset}
+                                view="grid"
+                                selected={selectedAssets.has(asset.id)}
+                                onSelect={handleSelectAsset}
+                                onQuickAction={handleQuickAction}
+                                showCheckbox={false}
+                              />
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              {loadingMore && (
+                <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                  <div className="flex justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              )}
+            </>
           );
         })()}
 
-        {/* Pagination */}
-        {!loading && assets.length > 0 && totalPages > 1 && (
-          <div className="mt-6 flex justify-between items-center">
-            <div className="text-sm text-gray-700">
-              Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total} results
-            </div>
-            <Pagination
-              currentPage={page}
-              totalPages={totalPages}
-              onPageChange={setPage}
-            />
-          </div>
-        )}
       </main>
     </div>
   );

@@ -53,6 +53,7 @@ model Asset {
   AssetVersion    AssetVersion[]
   AuditLog        AuditLog[]
   PlatformUsage   PlatformUsage[]
+  CarouselItem    CarouselItem[]
 
   @@index([companyId])
   @@index([status])
@@ -102,6 +103,20 @@ model AssetVersion {
   Asset         Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
 
   @@index([assetId])
+}
+
+model CarouselItem {
+  id          String    @id @default(cuid())
+  carouselId  String
+  storageUrl  String
+  fileSize    Int?
+  mimeType    String?
+  itemType    AssetType
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  Carousel    Asset     @relation(fields: [carouselId], references: [id], onDelete: Cascade)
+
+  @@index([carouselId])
 }
 
 model AuditLog {
@@ -212,6 +227,7 @@ enum AssetType {
   VIDEO
   DOCUMENT
   LINK
+  CAROUSEL
 }
 
 enum AuditAction {

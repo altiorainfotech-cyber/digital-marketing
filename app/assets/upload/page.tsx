@@ -157,8 +157,22 @@ function AssetUploadContent() {
       return 'URL is required for link assets';
     }
 
-    if (assetType !== AssetType.LINK && files.length === 0) {
+    if (assetType === AssetType.CAROUSEL && files.length < 2) {
+      return 'At least 2 files are required for carousel assets';
+    }
+
+    if (assetType !== AssetType.LINK && assetType !== AssetType.CAROUSEL && files.length === 0) {
       return 'At least one file is required';
+    }
+
+    if (assetType === AssetType.CAROUSEL) {
+      // Validate that carousel only contains images and videos
+      const invalidFiles = files.filter(f => 
+        !f.file.type.startsWith('image/') && !f.file.type.startsWith('video/')
+      );
+      if (invalidFiles.length > 0) {
+        return 'Carousel can only contain images and videos';
+      }
     }
 
     return null;
@@ -278,10 +292,10 @@ function AssetUploadContent() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            title: title || 'Untitled Link', // Use default if title is empty
+            title: title || 'Untitled Link',
             assetType,
             uploadType,
-            companyId: uploadType === UploadType.SEO ? companyId : undefined, // Only send companyId for SEO uploads
+            companyId: uploadType === UploadType.SEO ? companyId : undefined,
             url,
             submitForReview: uploadType === UploadType.SEO ? submitForReview : undefined,
             visibility: isAdmin && visibility ? visibility : undefined,
@@ -298,7 +312,132 @@ function AssetUploadContent() {
         return;
       }
 
-      // Upload all files
+      // For CAROUSEL type, upload all files as carousel items
+      if (assetType === AssetType.CAROUSEL) {
+        const response = await fetch('/api/assets/carousel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: title || 'Untitled Carousel',
+            description,
+            tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+            uploadType,
+            companyId: uploadType === UploadType.SEO ? companyId : undefined,
+            targetPlatforms: targetPlatforms ? targetPlatforms.split(',').map(p => p.trim()).filter(Boolean) : [],
+            campaignName,
+            visibility: isAdmin && visibility ? visibility : undefined,
+            submitForReview: uploadType === UploadType.SEO ? submitForReview : undefined,
+            fileCount: files.length,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to create carousel');
+        }
+
+        const { carouselId } = await response.json();
+
+        // Upload all files and collect their storage URLs
+        const uploadedItems: any[] = [];
+        
+        for (let i = 0; i < files.length; i++) {
+          const filePreview = files[i];
+          const { file } = filePreview;
+
+          setFiles(prev => prev.map(f => 
+            f.id === filePreview.id ? { ...f, status: 'uploading', progress: 0 } : f
+          ));
+
+          try {
+            // Get presigned URL for this specific file
+            const presignResponse = await fetch('/api/assets/presign', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                title: `${title || 'Carousel'} - Item ${i + 1}`,
+                assetType: file.type.startsWith('video/') ? AssetType.VIDEO : AssetType.IMAGE,
+                uploadType,
+                companyId: uploadType === UploadType.SEO ? companyId : undefined,
+                fileName: file.name,
+                contentType: file.type,
+                visibility: isAdmin && visibility ? visibility : undefined,
+              }),
+            });
+
+            if (!presignResponse.ok) {
+              throw new Error(`Failed to get upload URL for file ${i + 1}`);
+            }
+
+            const { uploadUrl, storageUrl } = await presignResponse.json();
+
+            // Upload file to presigned URL
+            const xhr = new XMLHttpRequest();
+
+            xhr.upload.addEventListener('progress', (e) => {
+              if (e.lengthComputable) {
+                const progress = Math.round((e.loaded / e.total) * 100);
+                setFiles(prev => prev.map(f => 
+                  f.id === filePreview.id ? { ...f, progress } : f
+                ));
+              }
+            });
+
+            await new Promise((resolve, reject) => {
+              xhr.addEventListener('load', () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                  setFiles(prev => prev.map(f => 
+                    f.id === filePreview.id ? { ...f, status: 'success', progress: 100 } : f
+                  ));
+                  
+                  uploadedItems.push({
+                    storageUrl,
+                    fileSize: file.size,
+                    mimeType: file.type,
+                  });
+                  
+                  resolve(xhr.response);
+                } else {
+                  reject(new Error(`Upload failed with status ${xhr.status}`));
+                }
+              });
+
+              xhr.addEventListener('error', () => {
+                reject(new Error('Upload failed'));
+              });
+
+              xhr.open('PUT', uploadUrl);
+              xhr.setRequestHeader('Content-Type', file.type);
+              xhr.send(file);
+            });
+          } catch (err: any) {
+            setFiles(prev => prev.map(f => 
+              f.id === filePreview.id ? { ...f, status: 'error', error: err.message } : f
+            ));
+            throw err;
+          }
+        }
+
+        // Finalize carousel with all uploaded items
+        const finalizeResponse = await fetch('/api/assets/carousel/finalize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            carouselId,
+            items: uploadedItems,
+          }),
+        });
+
+        if (!finalizeResponse.ok) {
+          const errorData = await finalizeResponse.json();
+          throw new Error(errorData.error || 'Failed to finalize carousel');
+        }
+
+        router.push(`/assets/${carouselId}`);
+        return;
+      }
+
+      // Upload all files individually
       const uploadPromises = files.map(file => uploadFile(file, submitForReview));
       const assetIds = await Promise.all(uploadPromises);
 
@@ -418,10 +557,16 @@ function AssetUploadContent() {
                   { value: AssetType.VIDEO, label: 'Video' },
                   { value: AssetType.DOCUMENT, label: 'Document' },
                   { value: AssetType.LINK, label: 'Link' },
+                  { value: AssetType.CAROUSEL, label: 'Carousel (Multiple Images/Videos)' },
                 ]}
                 fullWidth
                 required
               />
+              {assetType === AssetType.CAROUSEL && (
+                <p className="mt-2 text-sm text-gray-600 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  Upload multiple images and videos that will be grouped together as a carousel
+                </p>
+              )}
             </div>
 
             {/* Company - Required for SEO uploads only */}

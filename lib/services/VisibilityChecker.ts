@@ -68,7 +68,8 @@ export class VisibilityChecker {
    * 
    * Delete permission rules:
    * - Admin can delete any asset
-   * - Uploader can delete their own assets if status is DRAFT or REJECTED
+   * - CONTENT_CREATOR can delete their own DRAFT, PENDING_REVIEW, or REJECTED assets
+   * - Other users can delete their own DRAFT or REJECTED assets
    * - No one else can delete
    * 
    * @param user - The user attempting to delete the asset
@@ -81,8 +82,18 @@ export class VisibilityChecker {
       return true;
     }
 
-    // Uploader can delete their own assets if status is DRAFT or REJECTED
+    // Uploader can delete their own assets based on role and status
     if (user.id === asset.uploaderId) {
+      // CONTENT_CREATOR can delete DRAFT, PENDING_REVIEW, or REJECTED assets
+      if (user.role === UserRole.CONTENT_CREATOR) {
+        return (
+          asset.status === AssetStatus.DRAFT ||
+          asset.status === AssetStatus.PENDING_REVIEW ||
+          asset.status === AssetStatus.REJECTED
+        );
+      }
+      
+      // Other roles can only delete DRAFT or REJECTED assets
       return asset.status === AssetStatus.DRAFT || asset.status === AssetStatus.REJECTED;
     }
 

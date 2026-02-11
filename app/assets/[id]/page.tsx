@@ -18,6 +18,7 @@ import { Chip } from '@/lib/design-system/components/primitives/Chip';
 import { Breadcrumb } from '@/lib/design-system/components/composite/Breadcrumb';
 import { LoadingState } from '@/lib/design-system/components/patterns/LoadingState';
 import { ShareModal, PlatformDownloadModal } from '@/components/assets';
+import { CarouselSlider } from '@/components/CarouselSlider';
 import { 
   ArrowLeft,
   Download,
@@ -99,6 +100,15 @@ interface Version {
   createdAt: string;
 }
 
+interface CarouselItem {
+  id: string;
+  storageUrl: string;
+  publicUrl: string;
+  itemType: AssetType;
+  mimeType?: string | null;
+  order: number;
+}
+
 function AssetDetailContent() {
   const user = useUser();
   const router = useRouter();
@@ -107,6 +117,7 @@ function AssetDetailContent() {
 
   const [asset, setAsset] = useState<Asset | null>(null);
   const [publicUrl, setPublicUrl] = useState<string>('');
+  const [carouselItems, setCarouselItems] = useState<CarouselItem[]>([]);
   const [usages, setUsages] = useState<PlatformUsage[]>([]);
   const [downloads, setDownloads] = useState<Download[]>([]);
   const [versions, setVersions] = useState<Version[]>([]);
@@ -151,6 +162,21 @@ function AssetDetailContent() {
 
         const data = await response.json();
         setAsset(data);
+
+        // Fetch carousel items for carousel assets
+        if (data.assetType === AssetType.CAROUSEL) {
+          try {
+            const itemsResponse = await fetch(`/api/assets/${assetId}/carousel-items`);
+            if (itemsResponse.ok) {
+              const itemsData = await itemsResponse.json();
+              setCarouselItems(itemsData.items || []);
+            } else {
+              console.error('Failed to fetch carousel items:', itemsResponse.status);
+            }
+          } catch (err) {
+            console.error('Failed to load carousel items:', err);
+          }
+        }
 
         // Fetch public URL for images and videos
         if (data.assetType === AssetType.IMAGE || data.assetType === AssetType.VIDEO) {
@@ -446,8 +472,11 @@ function AssetDetailContent() {
             {/* Asset Preview */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Preview</h2>
-              <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg aspect-video flex items-center justify-center">
-                {asset.assetType === AssetType.IMAGE ? (
+              {asset.assetType === AssetType.CAROUSEL ? (
+                <CarouselSlider items={carouselItems} title={asset.title} />
+              ) : (
+                <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg aspect-video flex items-center justify-center">
+                  {asset.assetType === AssetType.IMAGE ? (
                   publicUrl ? (
                     <img
                       src={publicUrl}
@@ -531,7 +560,8 @@ function AssetDetailContent() {
                     <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">Use download button to view</p>
                   </div>
                 )}
-              </div>
+                </div>
+              )}
             </div>
 
             {/* Description */}

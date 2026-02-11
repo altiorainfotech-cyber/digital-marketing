@@ -19,6 +19,7 @@ import {
   UploadType, 
   AssetStatus, 
   VisibilityLevel,
+  UserRole,
   User,
   Asset
 } from '@/types';
@@ -120,20 +121,74 @@ export class SearchService {
     // Build where clause for Prisma query
     const where: any = {};
 
+    // Pre-filter for non-admin users to improve performance and accuracy
+    // This ensures content creators see their own uploads + public/shared assets
+    if (user.role !== UserRole.ADMIN) {
+      // Build visibility conditions based on user role
+      const visibilityConditions: any[] = [
+        // Always include own uploads
+        { uploaderId: user.id },
+        // Include PUBLIC assets
+        { visibility: VisibilityLevel.PUBLIC },
+      ];
+
+      // Add company-based visibility if user has a company
+      if (user.companyId) {
+        visibilityConditions.push({
+          visibility: VisibilityLevel.COMPANY,
+          companyId: user.companyId,
+        });
+      }
+
+      // Add role-based visibility
+      visibilityConditions.push({
+        visibility: VisibilityLevel.ROLE,
+        allowedRole: user.role,
+      });
+
+      // For SEO_SPECIALIST, only show APPROVED assets (except own uploads)
+      if (user.role === UserRole.SEO_SPECIALIST) {
+        where.OR = [
+          { uploaderId: user.id }, // Own uploads (any status)
+          {
+            AND: [
+              { uploaderId: { not: user.id } }, // Not own uploads
+              { status: AssetStatus.APPROVED }, // Must be approved
+              {
+                OR: visibilityConditions.filter(c => !c.uploaderId), // Apply visibility rules
+              },
+            ],
+          },
+        ];
+      } else {
+        // For CONTENT_CREATOR and other roles
+        where.OR = visibilityConditions;
+      }
+    }
+
     // Handle assigned assets filter
     if (assignedToUser) {
       // Exclude user's own uploads
-      where.uploaderId = { not: assignedToUser };
+      const assignedFilter: any = {
+        uploaderId: { not: assignedToUser },
+        OR: [
+          { visibility: VisibilityLevel.PUBLIC },
+          { 
+            visibility: VisibilityLevel.ROLE,
+            allowedRole: assignedToRole
+          },
+        ],
+      };
       
-      // Filter by visibility rules for assigned assets
-      where.OR = [
-        { visibility: VisibilityLevel.PUBLIC },
-        { 
-          visibility: VisibilityLevel.ROLE,
-          allowedRole: assignedToRole
-        },
-        // TODO: Add shared assets logic when AssetShare is implemented
-      ];
+      // Combine with existing OR conditions
+      if (where.OR) {
+        where.AND = where.AND || [];
+        where.AND.push({ OR: where.OR });
+        where.AND.push(assignedFilter);
+        delete where.OR;
+      } else {
+        Object.assign(where, assignedFilter);
+      }
     }
 
     // General query search (title, description, tags)
@@ -292,6 +347,8 @@ export class SearchService {
     })) as Asset[];
 
     // Use role-based filtering to ensure proper visibility for all user roles
+    // Note: We've already pre-filtered at the database level for non-admin users
+    // This additional check handles edge cases and shared assets
     const visibleAssets = await this.visibilityChecker.filterAssetsByRole(
       user,
       assetsForPermissionCheck
@@ -308,7 +365,7 @@ export class SearchService {
 
     return {
       assets: visibleAssetsWithRelations as any,
-      total: visibleAssets.length,
+      total: total, // Use database total since we pre-filtered
       page,
       limit,
       totalPages,
