@@ -36,6 +36,10 @@ export interface CalendarProps {
    */
   highlightedDates?: Date[];
   /**
+   * Dates with assets (shows icon indicator)
+   */
+  datesWithAssets?: Date[];
+  /**
    * Additional CSS classes
    */
   className?: string;
@@ -91,6 +95,7 @@ export function Calendar({
   maxDate,
   disabledDates,
   highlightedDates,
+  datesWithAssets,
   className = '',
 }: CalendarProps) {
   const today = new Date();
@@ -248,6 +253,7 @@ export function Calendar({
           const isSelected = selectedDate && isSameDay(date, selectedDate);
           const isDisabled = isDateDisabled(date, minDate, maxDate, disabledDates);
           const isHighlighted = highlightedDates?.some(d => isSameDay(d, date));
+          const hasAssets = datesWithAssets?.some(d => isSameDay(d, date));
           const isFocused = focusedDate && isSameDay(date, focusedDate);
 
           return (
@@ -258,7 +264,7 @@ export function Calendar({
               onKeyDown={(e) => handleKeyDown(e, date)}
               disabled={isDisabled}
               className={`
-                aspect-square flex items-center justify-center rounded-lg text-sm font-medium
+                aspect-square flex flex-col items-center justify-center rounded-lg text-sm font-medium
                 transition-all duration-200 relative
                 ${isDisabled 
                   ? 'text-gray-300 cursor-not-allowed' 
@@ -276,18 +282,32 @@ export function Calendar({
                   ? 'bg-blue-50' 
                   : ''
                 }
+                ${hasAssets && !isSelected
+                  ? 'bg-blue-50'
+                  : ''
+                }
                 ${isFocused && !isSelected
                   ? 'ring-2 ring-blue-400 ring-offset-2'
                   : ''
                 }
                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
               `}
-              aria-label={`${date.toLocaleDateString()}${isSelected ? ', selected' : ''}${isToday ? ', today' : ''}`}
+              aria-label={`${date.toLocaleDateString()}${isSelected ? ', selected' : ''}${isToday ? ', today' : ''}${hasAssets ? ', has assets' : ''}`}
               aria-current={isToday ? 'date' : undefined}
               aria-disabled={isDisabled}
               tabIndex={isToday || isSelected ? 0 : -1}
             >
-              {date.getDate()}
+              <span>{date.getDate()}</span>
+              {hasAssets && (
+                <svg 
+                  className={`w-3 h-3 mt-0.5 ${isSelected ? 'text-white' : 'text-blue-600'}`}
+                  fill="currentColor" 
+                  viewBox="0 0 20 20"
+                  aria-hidden="true"
+                >
+                  <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" />
+                </svg>
+              )}
               {isToday && !isSelected && (
                 <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-blue-600 rounded-full" />
               )}

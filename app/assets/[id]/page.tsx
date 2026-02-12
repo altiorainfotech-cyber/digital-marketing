@@ -35,7 +35,8 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Home
 } from 'lucide-react';
 import { AssetType, UploadType, AssetStatus, UserRole, Platform, VisibilityLevel } from '@/app/generated/prisma';
 import { initiateAssetDownload } from '@/lib/utils/downloadHelper';
@@ -374,13 +375,20 @@ function AssetDetailContent() {
       <div className="assets-page min-h-screen bg-gray-50">
         <nav className="bg-white shadow-sm border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center h-16">
+            <div className="flex justify-between items-center h-16">
               <Button
                 variant="ghost"
                 icon={<ArrowLeft className="w-4 h-4" />}
                 onClick={() => router.push('/assets')}
               >
                 Back to Assets
+              </Button>
+              <Button
+                variant="outline"
+                icon={<Home className="w-4 h-4" />}
+                onClick={() => router.push('/admin')}
+              >
+                Admin Panel
               </Button>
             </div>
           </div>
@@ -412,11 +420,18 @@ function AssetDetailContent() {
                 icon={<ArrowLeft className="w-4 h-4" />}
                 onClick={() => router.push('/assets')}
               >
-                Back
+                Back to Assets
               </Button>
               <Breadcrumb items={breadcrumbItems} />
             </div>
             <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                icon={<Home className="w-4 h-4" />}
+                onClick={() => router.push('/admin')}
+              >
+                Admin Panel
+              </Button>
               {canShare && (
                 <Button
                   variant="outline"

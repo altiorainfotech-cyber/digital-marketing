@@ -135,7 +135,7 @@ export function Modal({
         aria-labelledby={title ? 'modal-title' : undefined}
         tabIndex={-1}
         className={`
-          relative bg-white dark:bg-neutral-800 rounded-lg shadow-xl
+          relative bg-[#1f1f1f] rounded-lg shadow-xl
           w-full ${sizeStyles[size]}
           max-h-[90vh] flex flex-col
           animate-slide-in
@@ -144,16 +144,16 @@ export function Modal({
       >
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-700">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-700">
             <h2
               id="modal-title"
-              className="text-xl font-semibold text-neutral-900 dark:text-neutral-100"
+              className="text-xl font-semibold text-white"
             >
               {title}
             </h2>
             <button
               onClick={onClose}
-              className="p-1 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+              className="p-1 rounded-lg hover:bg-[#2a2a2a] transition-colors"
               aria-label="Close modal"
             >
               <Icon size={20}>
@@ -167,7 +167,7 @@ export function Modal({
         {!title && (
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-1 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors z-10"
+            className="absolute top-4 right-4 p-1 rounded-lg hover:bg-[#2a2a2a] transition-colors z-10"
             aria-label="Close modal"
           >
             <Icon size={20}>
@@ -183,7 +183,7 @@ export function Modal({
         
         {/* Footer */}
         {footer && (
-          <div className="px-6 py-4 border-t border-neutral-200 dark:border-neutral-700">
+          <div className="px-6 py-4 border-t border-neutral-700">
             {footer}
           </div>
         )}

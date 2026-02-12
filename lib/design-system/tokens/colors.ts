@@ -13,14 +13,14 @@ export const colors = {
     200: '#bfdbfe',
     300: '#93c5fd',
     400: '#60a5fa',
-    500: '#3b82f6',  // Main primary
-    600: '#2563eb',
+    500: '#3b82f6',
+    600: '#2663eb',  // Main primary - used for buttons
     700: '#1d4ed8',
     800: '#1e40af',
     900: '#1e3a8a',
   },
   
-  // Neutral colors (grays)
+  // Neutral colors (grays) - adjusted for dark theme
   neutral: {
     50: '#fafafa',
     100: '#f5f5f5',
@@ -30,8 +30,15 @@ export const colors = {
     500: '#737373',
     600: '#525252',
     700: '#404040',
-    800: '#262626',
-    900: '#171717',
+    800: '#2a2a2a',  // Hover state for dark gray
+    900: '#1f1f1f',  // Navigation bar dark gray
+  },
+  
+  // Background colors
+  background: {
+    primary: '#000000',    // Black background
+    secondary: '#1f1f1f',  // Dark gray for nav/cards
+    tertiary: '#2a2a2a',   // Lighter gray for hover states
   },
   
   // Semantic colors - Success
@@ -84,7 +91,7 @@ export const colors = {
     300: '#93c5fd',
     400: '#60a5fa',
     500: '#3b82f6',  // Main info
-    600: '#2563eb',
+    600: '#2663eb',
     700: '#1d4ed8',
     800: '#1e40af',
     900: '#1e3a8a',

@@ -83,8 +83,8 @@ export function Dropdown({
         <div
           className={`
             absolute z-50 ${positionStyles[position]}
-            min-w-[200px] bg-white dark:bg-neutral-800
-            border border-neutral-200 dark:border-neutral-700
+            min-w-[200px] bg-[#1f1f1f]
+            border border-neutral-700
             rounded-lg shadow-lg
             py-1
             animate-fade-in
@@ -101,8 +101,8 @@ export function Dropdown({
                 transition-colors duration-150
                 ${
                   item.disabled
-                    ? 'text-neutral-400 dark:text-neutral-600 cursor-not-allowed'
-                    : 'text-neutral-900 dark:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-700'
+                    ? 'text-neutral-500 cursor-not-allowed'
+                    : 'text-white hover:bg-[#2a2a2a]'
                 }
               `}
               role="menuitem"

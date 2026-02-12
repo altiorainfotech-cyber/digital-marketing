@@ -77,14 +77,14 @@ export function Sidebar({
 }: SidebarProps) {
   return (
     <aside
-      className={`flex flex-col h-full bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800 transition-all duration-300 ${
+      className={`flex flex-col h-full bg-[#1f1f1f] border-r border-neutral-700 transition-all duration-300 ${
         collapsed ? 'w-16' : 'w-64'
       } ${showOnMobile ? '' : 'hidden md:flex'} ${className}`}
       aria-label="Sidebar navigation"
     >
       {/* Logo */}
       {logo && (
-        <div className="flex items-center h-16 px-4 border-b border-neutral-200 dark:border-neutral-800">
+        <div className="flex items-center h-16 px-4 border-b border-neutral-700">
           {logo}
         </div>
       )}
@@ -102,7 +102,7 @@ export function Sidebar({
 
       {/* Footer */}
       {footer && (
-        <div className="border-t border-neutral-200 dark:border-neutral-800 p-4">
+        <div className="border-t border-neutral-700 p-4">
           {footer}
         </div>
       )}
@@ -126,10 +126,10 @@ function SidebarLink({ item, collapsed }: SidebarLinkProps) {
   `;
 
   const stateClasses = item.disabled
-    ? 'text-neutral-400 dark:text-neutral-600 cursor-not-allowed'
+    ? 'text-neutral-500 cursor-not-allowed'
     : item.active
-    ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 border-l-4 border-primary-500'
-    : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800';
+    ? 'bg-[#2663eb]/20 text-white border-l-4 border-[#2663eb]'
+    : 'text-white hover:bg-[#2a2a2a]';
 
   const content = (
     <>
@@ -145,7 +145,7 @@ function SidebarLink({ item, collapsed }: SidebarLinkProps) {
           
           {item.badge !== undefined && (
             <span
-              className="flex-shrink-0 px-2 py-0.5 text-xs font-semibold rounded-full bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300"
+              className="flex-shrink-0 px-2 py-0.5 text-xs font-semibold rounded-full bg-[#2663eb] text-white"
               aria-label={`${item.badge} items`}
             >
               {item.badge}

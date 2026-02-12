@@ -25,7 +25,8 @@ import {
   Link as LinkIcon,
   CheckCircle,
   AlertCircle,
-  ArrowLeft
+  ArrowLeft,
+  Home
 } from 'lucide-react';
 import { AssetType, UploadType, VisibilityLevel, UserRole } from '@/app/generated/prisma';
 
@@ -476,10 +477,17 @@ function AssetUploadContent() {
                 icon={<ArrowLeft className="w-4 h-4" />}
                 onClick={() => router.push('/assets')}
               >
-                Back
+                Back to Assets
               </Button>
               <h1 className="text-2xl font-bold text-gray-900">Upload Asset</h1>
             </div>
+            <Button
+              variant="outline"
+              icon={<Home className="w-4 h-4" />}
+              onClick={() => router.push('/admin')}
+            >
+              Admin Panel
+            </Button>
           </div>
         </div>
       </nav>
@@ -664,13 +672,14 @@ function AssetUploadContent() {
                   <p className="text-base font-medium text-gray-900 mb-1">
                     {dragActive ? 'Drop files here' : 'Drag and drop files here'}
                   </p>
-                  <p className="text-sm text-gray-600 mb-4">
+                  <p className="text-sm text-gray-700 mb-4">
                     or click to browse
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-600">
                     {assetType === AssetType.IMAGE && 'Supported: JPG, PNG, GIF, WebP'}
                     {assetType === AssetType.VIDEO && 'Supported: MP4, MOV, AVI, WebM'}
                     {assetType === AssetType.DOCUMENT && 'Supported: PDF, DOC, DOCX, TXT'}
+                    {assetType === AssetType.CAROUSEL && 'Supported: Images (JPG, PNG, GIF, WebP) and Videos (MP4, MOV, AVI, WebM)'}
                   </p>
                   <input
                     ref={fileInputRef}

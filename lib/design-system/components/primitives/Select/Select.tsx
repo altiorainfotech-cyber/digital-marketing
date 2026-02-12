@@ -36,12 +36,12 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     const selectId = id || `select-${Math.random().toString(36).substr(2, 9)}`;
 
     // Base select styles
-    const baseSelectStyles = 'w-full px-4 py-2 pr-10 text-base border rounded-lg transition-all duration-300 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 appearance-none bg-white';
+    const baseSelectStyles = 'w-full px-4 py-2 pr-10 text-base border rounded-lg transition-all duration-300 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[#2a2a2a] appearance-none bg-[#1f1f1f] text-white';
 
     // Border and focus styles
     const borderStyles = error
       ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-200'
-      : 'border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200';
+      : 'border-neutral-700 focus:border-[#2663eb] focus:ring-2 focus:ring-[#2663eb]/20';
 
     const selectClasses = `${baseSelectStyles} ${borderStyles} ${className}`;
 
@@ -51,7 +51,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         {label && (
           <label
             htmlFor={selectId}
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-white mb-1"
           >
             {label}
             {required && <span className="text-red-500 ml-1">*</span>}
@@ -85,14 +85,14 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           </select>
 
           {/* Chevron Icon */}
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none">
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-white pointer-events-none">
             <ChevronDown size={20} />
           </div>
         </div>
 
         {/* Helper Text */}
         {helperText && !error && (
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{helperText}</p>
+          <p className="mt-1 text-sm text-neutral-400">{helperText}</p>
         )}
 
         {/* Error Message */}

@@ -1,14 +1,14 @@
 /**
  * CalendarFilter Component
  * 
- * Calendar filter integration for asset management
+ * Calendar filter integration for asset management with asset date indicators
  * 
  * Requirements: 26.1, 26.2, 26.9, 26.10, 26.11, 26.12, 26.13, 26.18
  */
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CalendarModal } from '@/lib/design-system/components/composite/Calendar';
 import { Button } from '@/lib/design-system/components/primitives/Button';
 import { Badge } from '@/lib/design-system/components/primitives/Badge';
@@ -41,6 +41,32 @@ function formatDate(date: Date): string {
  */
 export function CalendarFilter({ onDateSelect, selectedDate }: CalendarFilterProps) {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [datesWithAssets, setDatesWithAssets] = useState<Date[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch dates with assets when calendar opens
+  useEffect(() => {
+    if (isCalendarOpen && datesWithAssets.length === 0) {
+      fetchAssetDates();
+    }
+  }, [isCalendarOpen]);
+
+  const fetchAssetDates = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/assets/dates');
+      if (response.ok) {
+        const data = await response.json();
+        // Convert date strings to Date objects
+        const dates = (data.dates || []).map((dateStr: string) => new Date(dateStr));
+        setDatesWithAssets(dates);
+      }
+    } catch (error) {
+      console.error('Failed to fetch asset dates:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDateSelect = (date: Date) => {
     onDateSelect(date);
@@ -81,6 +107,7 @@ export function CalendarFilter({ onDateSelect, selectedDate }: CalendarFilterPro
         onClose={() => setIsCalendarOpen(false)}
         selectedDate={selectedDate || undefined}
         onDateSelect={handleDateSelect}
+        datesWithAssets={datesWithAssets}
         title="Select a Day"
       />
     </div>

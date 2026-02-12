@@ -40,10 +40,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     // Variant styles
     const variantStyles = {
-      primary: 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 focus:ring-blue-500',
-      secondary: 'bg-gray-600 text-white hover:bg-gray-700 active:bg-gray-800 focus:ring-gray-500',
-      outline: 'border-2 border-blue-600 text-blue-600 bg-transparent hover:bg-blue-50 active:bg-blue-100 focus:ring-blue-500',
-      ghost: 'text-blue-600 bg-transparent hover:bg-blue-50 active:bg-blue-100 focus:ring-blue-500',
+      primary: 'bg-[#2663eb] text-white hover:bg-[#1d4ed8] active:bg-[#1e40af] focus:ring-blue-500',
+      secondary: 'bg-[#1f1f1f] text-white hover:bg-[#2a2a2a] active:bg-[#353535] focus:ring-gray-500',
+      outline: 'border-2 border-[#2663eb] text-white bg-transparent hover:bg-[#2663eb]/10 active:bg-[#2663eb]/20 focus:ring-blue-500',
+      ghost: 'text-white bg-transparent hover:bg-[#1f1f1f] active:bg-[#2a2a2a] focus:ring-blue-500',
       danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 focus:ring-red-500',
     };
 

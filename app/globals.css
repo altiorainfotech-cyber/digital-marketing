@@ -9,7 +9,7 @@
   --color-primary-300: #93c5fd;
   --color-primary-400: #60a5fa;
   --color-primary-500: #3b82f6;
-  --color-primary-600: #2563eb;
+  --color-primary-600: #2663eb;
   --color-primary-700: #1d4ed8;
   --color-primary-800: #1e40af;
   --color-primary-900: #1e3a8a;
@@ -69,14 +69,16 @@
   --color-info-300: #93c5fd;
   --color-info-400: #60a5fa;
   --color-info-500: #3b82f6;
-  --color-info-600: #2563eb;
+  --color-info-600: #2663eb;
   --color-info-700: #1d4ed8;
   --color-info-800: #1e40af;
   --color-info-900: #1e3a8a;
 
-  /* Theme Colors */
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Dark Theme Colors */
+  --background: #000000;
+  --foreground: #ffffff;
+  --nav-background: #1f1f1f;
+  --button-primary: #2663eb;
 }
 
 @theme inline {
@@ -196,17 +198,368 @@
   --breakpoint-2xl: 1536px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+}
+
+/* Global Dark Theme Overrides */
+/* Background colors */
+.bg-white,
+.bg-gray-50,
+.dark\:bg-gray-900,
+.dark\:bg-neutral-900,
+.dark\:bg-neutral-800 {
+  background-color: #000000 !important;
+}
+
+/* Card and panel backgrounds */
+[class*="bg-white"],
+[class*="bg-gray-50"] {
+  background-color: #1f1f1f !important;
+}
+
+/* Navigation and header backgrounds */
+nav,
+header {
+  background-color: #1f1f1f !important;
+}
+
+/* All text should be white */
+*:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(rect) {
+  color: #ffffff !important;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  color: #ffffff !important;
+}
+
+/* Paragraphs and text elements */
+p, span, div, label, a, li, td, th, dt, dd {
+  color: #ffffff !important;
+}
+
+/* Links should be visible */
+a {
+  color: #60a5fa !important;
+}
+
+a:hover {
+  color: #93c5fd !important;
+}
+
+/* Input and form elements */
+input, textarea, select {
+  color: #ffffff !important;
+  background-color: #1f1f1f !important;
+  border-color: #404040 !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #a3a3a3 !important;
+}
+
+/* Buttons - override all button backgrounds except primary */
+button:not([class*="primary"]):not([class*="danger"]) {
+  background-color: #1f1f1f !important;
+  color: #ffffff !important;
+  border-color: #404040 !important;
+}
+
+button:not([class*="primary"]):not([class*="danger"]):hover {
+  background-color: #2a2a2a !important;
+}
+
+/* Primary buttons */
+button[class*="primary"],
+.bg-blue-600,
+.bg-blue-500 {
+  background-color: #2663eb !important;
+  color: #ffffff !important;
+  border-color: #2663eb !important;
+}
+
+button[class*="primary"]:hover,
+.bg-blue-700:hover {
+  background-color: #1d4ed8 !important;
+}
+
+/* Borders */
+[class*="border-gray"],
+[class*="border-neutral"] {
+  border-color: #404040 !important;
+}
+
+/* Tables */
+table {
+  background-color: #1f1f1f !important;
+}
+
+thead {
+  background-color: #2a2a2a !important;
+}
+
+tbody tr {
+  background-color: #1f1f1f !important;
+  border-color: #404040 !important;
+}
+
+tbody tr:hover {
+  background-color: #2a2a2a !important;
+}
+
+/* Cards and containers */
+[class*="rounded-lg"],
+[class*="rounded"],
+[class*="shadow"] {
+  background-color: #1f1f1f !important;
+  border-color: #404040 !important;
+}
+
+/* Dropdowns and modals */
+[role="menu"],
+[role="dialog"] {
+  background-color: #1f1f1f !important;
+  border-color: #404040 !important;
+}
+
+/* Status badges - keep their semantic colors but adjust for dark theme */
+.bg-green-50,
+.bg-success-50 {
+  background-color: #15803d !important;
+}
+
+.bg-yellow-50,
+.bg-warning-50 {
+  background-color: #b45309 !important;
+}
+
+.bg-red-50,
+.bg-error-50 {
+  background-color: #b91c1c !important;
+}
+
+.bg-blue-50,
+.bg-primary-50,
+.bg-info-50 {
+  background-color: #1d4ed8 !important;
+}
+
+/* Hover states */
+.hover\:bg-gray-50:hover,
+.hover\:bg-gray-100:hover,
+.hover\:bg-neutral-100:hover {
+  background-color: #2a2a2a !important;
+}
+
+/* Focus states */
+*:focus {
+  outline-color: #2663eb !important;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 12px;
+  background-color: #000000;
+}
+
+::-webkit-scrollbar-track {
+  background-color: #1f1f1f;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #404040;
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #525252;
+}
+
+/* Additional specific overrides for pages */
+.min-h-screen {
+  background-color: #000000 !important;
+}
+
+/* Override any remaining light backgrounds */
+.bg-gray-100,
+.bg-neutral-100,
+.bg-neutral-50 {
+  background-color: #1f1f1f !important;
+}
+
+.bg-gray-200,
+.bg-neutral-200 {
+  background-color: #2a2a2a !important;
+}
+
+/* Text color overrides for specific classes */
+.text-gray-900,
+.text-gray-800,
+.text-gray-700,
+.text-neutral-900,
+.text-neutral-800,
+.text-neutral-700 {
+  color: #ffffff !important;
+}
+
+.text-gray-600,
+.text-gray-500,
+.text-neutral-600,
+.text-neutral-500 {
+  color: #e5e5e5 !important;
+}
+
+.text-gray-400,
+.text-neutral-400 {
+  color: #a3a3a3 !important;
+}
+
+/* Icon colors */
+svg {
+  color: inherit !important;
+}
+
+/* Ensure dropdowns and selects have proper styling */
+select option {
+  background-color: #1f1f1f !important;
+  color: #ffffff !important;
+}
+
+/* File upload areas */
+[class*="drag"],
+[class*="drop"] {
+  background-color: #1f1f1f !important;
+  border-color: #404040 !important;
+}
+
+/* Progress bars */
+[class*="progress"] {
+  background-color: #2a2a2a !important;
+}
+
+/* Badges and pills */
+[class*="badge"],
+[class*="pill"] {
+  background-color: #2663eb !important;
+  color: #ffffff !important;
+}
+
+/* Skeleton loaders */
+[class*="skeleton"],
+[class*="loading"] {
+  background-color: #2a2a2a !important;
+}
+
+/* Override ALL possible light theme backgrounds */
+.bg-white,
+.bg-gray-50,
+.bg-gray-100,
+.bg-neutral-50,
+.bg-neutral-100,
+[class*="bg-white"],
+[class*="bg-gray-50"],
+[class*="bg-gray-100"] {
+  background-color: #1f1f1f !important;
+}
+
+/* Dark mode classes should also use our theme */
+.dark\:bg-neutral-800,
+.dark\:bg-neutral-900,
+.dark\:bg-gray-800,
+.dark\:bg-gray-900 {
+  background-color: #1f1f1f !important;
+}
+
+/* Ensure min-h-screen backgrounds are black */
+.min-h-screen {
+  background-color: #000000 !important;
+}
+
+/* Override text colors comprehensively */
+.text-gray-900,
+.text-gray-800,
+.text-gray-700,
+.text-gray-600,
+.text-neutral-900,
+.text-neutral-800,
+.text-neutral-700,
+.text-neutral-600,
+[class*="text-gray-"],
+[class*="text-neutral-"] {
+  color: #ffffff !important;
+}
+
+/* Specific overrides for common patterns */
+aside,
+nav,
+header,
+main {
+  background-color: inherit !important;
+}
+
+/* Sidebar specific */
+aside {
+  background-color: #1f1f1f !important;
+}
+
+/* Navigation specific */
+nav {
+  background-color: #1f1f1f !important;
+}
+
+/* Ensure all containers and wrappers use dark theme */
+[class*="container"],
+[class*="wrapper"],
+[class*="panel"] {
+  background-color: inherit !important;
+}
+
+/* Override hover backgrounds */
+.hover\:bg-gray-50:hover,
+.hover\:bg-gray-100:hover,
+.hover\:bg-gray-200:hover,
+.hover\:bg-neutral-50:hover,
+.hover\:bg-neutral-100:hover,
+.hover\:bg-neutral-200:hover {
+  background-color: #2a2a2a !important;
+}
+
+/* Override active/selected states */
+.bg-blue-50,
+.bg-blue-100 {
+  background-color: rgba(38, 99, 235, 0.2) !important;
+}
+
+/* Ring colors for focus states */
+[class*="ring-blue"] {
+  --tw-ring-color: #2663eb !important;
+}
+
+/* Shadow colors should work with dark theme */
+[class*="shadow"] {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.5), 0 1px 2px -1px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Ensure all modals and overlays use dark theme */
+[class*="modal"],
+[class*="overlay"],
+[class*="dialog"] {
+  background-color: #1f1f1f !important;
+}
+
+/* Fixed/absolute positioned elements */
+.fixed,
+.absolute {
+  background-color: inherit !important;
+}
+
+/* Ensure backdrop overlays are dark */
+[class*="backdrop"],
+[class*="bg-black"] {
+  background-color: rgba(0, 0, 0, 0.8) !important;
 }
 
 /* Animations */
@@ -297,9 +650,9 @@ body {
 .animate-shimmer {
   background: linear-gradient(
     90deg,
-    #f0f0f0 0%,
-    #f8f8f8 50%,
-    #f0f0f0 100%
+    #2a2a2a 0%,
+    #404040 50%,
+    #2a2a2a 100%
   );
   background-size: 1000px 100%;
   animation: shimmer 2s infinite;
@@ -316,9 +669,9 @@ body {
 .skeleton-shimmer {
   background: linear-gradient(
     90deg,
-    var(--color-neutral-200) 0%,
-    var(--color-neutral-100) 50%,
-    var(--color-neutral-200) 100%
+    #2a2a2a 0%,
+    #404040 50%,
+    #2a2a2a 100%
   );
   background-size: 1000px 100%;
   animation: shimmer 2s infinite;
@@ -327,9 +680,9 @@ body {
 .dark .skeleton-shimmer {
   background: linear-gradient(
     90deg,
-    var(--color-neutral-700) 0%,
-    var(--color-neutral-600) 50%,
-    var(--color-neutral-700) 100%
+    #2a2a2a 0%,
+    #404040 50%,
+    #2a2a2a 100%
   );
   background-size: 1000px 100%;
 }
@@ -360,16 +713,13 @@ body {
 }
 
 /* Assets Page Text Color Fixes */
-/* Fix all text colors on assets pages to use proper dark colors */
+/* Override for dark theme - all text should be white */
 .assets-page h1,
 .assets-page h2,
 .assets-page h3,
 .assets-page h4,
 .assets-page h5,
-.assets-page h6 {
-  color: #171717 !important; /* neutral-900 */
-}
-
+.assets-page h6,
 .assets-page p,
 .assets-page span:not(.lucide):not([class*="icon"]),
 .assets-page div,
@@ -377,50 +727,46 @@ body {
 .assets-page dt,
 .assets-page dd,
 .assets-page th,
-.assets-page td {
-  color: #404040 !important; /* neutral-700 */
-}
-
-.assets-page .text-sm {
-  color: #525252 !important; /* neutral-600 */
-}
-
+.assets-page td,
+.assets-page .text-sm,
 .assets-page .text-xs {
-  color: #737373 !important; /* neutral-500 */
+  color: #ffffff !important;
 }
 
 /* Fix button text colors on assets pages */
 .assets-page button {
-  color: #171717 !important;
+  color: #ffffff !important;
 }
 
-/* Download button should have black background and white text */
+/* Primary buttons should use the theme color */
 .assets-page button[class*="primary"],
 .assets-page button[class*="Primary"] {
-  background-color: #171717 !important;
+  background-color: #2663eb !important;
   color: #ffffff !important;
-  border-color: #171717 !important;
+  border-color: #2663eb !important;
 }
 
 .assets-page button[class*="primary"]:hover,
 .assets-page button[class*="Primary"]:hover {
-  background-color: #262626 !important;
-  border-color: #262626 !important;
+  background-color: #1d4ed8 !important;
+  border-color: #1d4ed8 !important;
 }
 
 /* Fix link colors */
 .assets-page a {
-  color: #2563eb !important; /* primary-600 */
+  color: #60a5fa !important;
 }
 
 .assets-page a:hover {
-  color: #1d4ed8 !important; /* primary-700 */
+  color: #93c5fd !important;
 }
 
 /* Fix input text colors */
 .assets-page input,
 .assets-page select,
 .assets-page textarea {
-  color: #171717 !important;
+  color: #ffffff !important;
+  background-color: #1f1f1f !important;
+  border-color: #404040 !important;
 }
 

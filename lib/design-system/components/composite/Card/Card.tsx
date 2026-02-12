@@ -33,9 +33,9 @@ export function Card({
   
   // Variant styles
   const variantStyles = {
-    default: 'bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700',
-    outlined: 'bg-transparent border-2 border-neutral-300 dark:border-neutral-600',
-    elevated: 'bg-white dark:bg-neutral-800 shadow-md',
+    default: 'bg-[#1f1f1f] border border-neutral-700',
+    outlined: 'bg-transparent border-2 border-neutral-600',
+    elevated: 'bg-[#1f1f1f] shadow-md',
   };
   
   // Padding styles - responsive

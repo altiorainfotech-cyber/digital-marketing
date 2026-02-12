@@ -75,8 +75,8 @@ export function TopNav({
   return (
     <nav
       className={`
-        bg-white dark:bg-neutral-900
-        ${bordered ? 'border-b border-neutral-200 dark:border-neutral-800' : ''}
+        bg-[#1f1f1f]
+        ${bordered ? 'border-b border-neutral-700' : ''}
         ${sticky ? 'sticky top-0 z-30' : ''}
         ${className}
       `}
@@ -133,10 +133,10 @@ function TopNavLink({ item }: TopNavLinkProps) {
   `;
 
   const stateClasses = item.disabled
-    ? 'text-neutral-400 dark:text-neutral-600 cursor-not-allowed'
+    ? 'text-neutral-500 cursor-not-allowed'
     : item.active
-    ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100'
-    : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800/50';
+    ? 'bg-[#2a2a2a] text-white'
+    : 'text-white hover:bg-[#2a2a2a]';
 
   if (item.disabled) {
     return (
@@ -178,8 +178,8 @@ export function MobileMenuButton({ onClick, className = '' }: MobileMenuButtonPr
       onClick={onClick}
       className={`
         inline-flex items-center justify-center p-2 rounded-lg
-        text-neutral-700 dark:text-neutral-300
-        hover:bg-neutral-100 dark:hover:bg-neutral-800
+        text-white
+        hover:bg-[#2a2a2a]
         focus:outline-none focus:ring-2 focus:ring-primary-500
         min-w-[44px] min-h-[44px]
         ${className}
