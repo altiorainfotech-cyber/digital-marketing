@@ -17,7 +17,7 @@ import { Badge } from '@/lib/design-system/components/primitives/Badge';
 import { Chip } from '@/lib/design-system/components/primitives/Chip';
 import { Breadcrumb } from '@/lib/design-system/components/composite/Breadcrumb';
 import { LoadingState } from '@/lib/design-system/components/patterns/LoadingState';
-import { ShareModal, PlatformDownloadModal, FullScreenAssetViewer } from '@/components/assets';
+import { ShareModal, PlatformDownloadModal, FullscreenPreviewModal } from '@/components/assets';
 import { CarouselSlider } from '@/components/CarouselSlider';
 import { 
   ArrowLeft,
@@ -26,6 +26,7 @@ import {
   Edit,
   Trash2,
   Eye,
+  Maximize2,
   Calendar,
   User,
   Building2,
@@ -136,9 +137,9 @@ function AssetDetailContent() {
   
   // Platform download modal state
   const [showPlatformModal, setShowPlatformModal] = useState(false);
-
-  // Full screen viewer state
-  const [showFullScreen, setShowFullScreen] = useState(false);
+  
+  // Fullscreen preview modal state
+  const [showFullscreenModal, setShowFullscreenModal] = useState(false);
 
   const isAdmin = user?.role === UserRole.ADMIN;
   const isOwner = user?.id === asset?.uploaderId;
@@ -416,14 +417,6 @@ function AssetDetailContent() {
               <Breadcrumb items={breadcrumbItems} />
             </div>
             <div className="flex items-center gap-3">
-              {/* Full Screen View Button */}
-              <Button
-                variant="outline"
-                icon={<Eye className="w-4 h-4" />}
-                onClick={() => setShowFullScreen(true)}
-              >
-                Full Screen
-              </Button>
               {canShare && (
                 <Button
                   variant="outline"
@@ -482,7 +475,22 @@ function AssetDetailContent() {
           <div className="lg:col-span-2 space-y-6">
             {/* Asset Preview */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Preview</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Preview</h2>
+                {((asset.assetType === AssetType.IMAGE || 
+                  asset.assetType === AssetType.VIDEO || 
+                  asset.assetType === AssetType.DOCUMENT) && publicUrl) ||
+                  (asset.assetType === AssetType.CAROUSEL && carouselItems.length > 0) ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    icon={<Maximize2 className="w-4 h-4" />}
+                    onClick={() => setShowFullscreenModal(true)}
+                  >
+                    View Fullscreen
+                  </Button>
+                ) : null}
+              </div>
               {asset.assetType === AssetType.CAROUSEL ? (
                 <CarouselSlider items={carouselItems} title={asset.title} />
               ) : (
@@ -882,18 +890,18 @@ function AssetDetailContent() {
         onConfirm={performDownload}
         assetTitle={asset?.title || 'Asset'}
       />
-
-      {/* Full Screen Asset Viewer */}
-      <FullScreenAssetViewer
-        isOpen={showFullScreen}
-        onClose={() => setShowFullScreen(false)}
-        assetId={assetId}
-        assetTitle={asset.title}
+      
+      {/* Fullscreen Preview Modal */}
+      <FullscreenPreviewModal
+        isOpen={showFullscreenModal}
+        onClose={() => setShowFullscreenModal(false)}
         assetType={asset.assetType}
         publicUrl={publicUrl}
+        storageUrl={asset.storageUrl}
+        title={asset.title}
+        mimeType={asset.mimeType}
+        onDownload={handleDownload}
         carouselItems={carouselItems}
-        onShare={canShare ? () => setShowShareModal(true) : undefined}
-        canShare={canShare}
       />
     </div>
   );

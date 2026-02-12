@@ -175,6 +175,8 @@ function AssetListContent() {
         return '📄';
       case AssetType.LINK:
         return '🔗';
+      case AssetType.CAROUSEL:
+        return '🎠';
       default:
         return '📁';
     }

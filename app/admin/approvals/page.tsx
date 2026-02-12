@@ -25,7 +25,8 @@ import {
   FileText, 
   Link as LinkIcon,
   X,
-  Eye
+  Eye,
+  Images
 } from 'lucide-react';
 
 interface Asset {
@@ -356,28 +357,50 @@ function PendingApprovalsContent() {
         return <FileText className="w-6 h-6" />;
       case AssetType.LINK:
         return <LinkIcon className="w-6 h-6" />;
+      case AssetType.CAROUSEL:
+        return <Images className="w-6 h-6" />;
       default:
         return <FileText className="w-6 h-6" />;
     }
   };
 
-  const getAssetTypeBadgeVariant = (type: AssetType) => {
+  const getAssetTypeBadgeVariant = (type: AssetType): 'default' | 'primary' | 'success' | 'warning' | 'error' | 'info' => {
     switch (type) {
       case AssetType.IMAGE:
-        return 'blue';
+        return 'primary';
       case AssetType.VIDEO:
-        return 'purple';
+        return 'info';
       case AssetType.DOCUMENT:
-        return 'green';
+        return 'success';
       case AssetType.LINK:
-        return 'gray';
+        return 'default';
+      case AssetType.CAROUSEL:
+        return 'warning';
       default:
-        return 'gray';
+        return 'default';
     }
   };
 
   const renderAssetPreview = (asset: Asset) => {
     const previewUrl = assetPreviewUrls[asset.id];
+
+    if (asset.assetType === AssetType.CAROUSEL) {
+      return (
+        <div className="relative w-full h-48 bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-900 rounded-lg overflow-hidden mb-3 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-warning-600 dark:text-warning-400 mb-2">
+              <Images className="w-12 h-12 mx-auto" />
+            </div>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400 font-medium">
+              Carousel Asset
+            </p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">
+              Multiple images/videos
+            </p>
+          </div>
+        </div>
+      );
+    }
 
     if (asset.assetType === AssetType.IMAGE && previewUrl) {
       return (
@@ -472,6 +495,7 @@ function PendingApprovalsContent() {
     { value: AssetType.VIDEO, label: 'Videos' },
     { value: AssetType.DOCUMENT, label: 'Documents' },
     { value: AssetType.LINK, label: 'Links' },
+    { value: AssetType.CAROUSEL, label: 'Carousels' },
   ];
 
   const dateFilterOptions: SelectOption[] = [
@@ -662,7 +686,7 @@ function PendingApprovalsContent() {
                       <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 truncate">
                         {asset.title}
                       </h3>
-                      <Badge variant={getAssetTypeBadgeVariant(asset.assetType) as any} size="sm">
+                      <Badge variant={getAssetTypeBadgeVariant(asset.assetType)} size="sm">
                         {asset.assetType}
                       </Badge>
                     </div>

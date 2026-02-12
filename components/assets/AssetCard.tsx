@@ -26,7 +26,6 @@ import {
 } from 'lucide-react';
 import { AssetType, AssetStatus, Platform, UserRole } from '@/app/generated/prisma';
 import { PlatformDownloadModal } from './PlatformDownloadModal';
-import { FullScreenAssetViewer } from './FullScreenAssetViewer';
 import { initiateAssetDownload } from '@/lib/utils/downloadHelper';
 
 export interface AssetCardData {
@@ -285,8 +284,6 @@ function AssetCardGrid({
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [previewError, setPreviewError] = useState(false);
   const [showPlatformModal, setShowPlatformModal] = useState(false);
-  const [showFullScreen, setShowFullScreen] = useState(false);
-  const [carouselItems, setCarouselItems] = useState<any[]>([]);
 
   // Fetch preview URL for images and videos
   useEffect(() => {
@@ -314,25 +311,6 @@ function AssetCardGrid({
     };
 
     fetchPreviewUrl();
-  }, [asset.id, asset.assetType]);
-
-  // Fetch carousel items if it's a carousel
-  useEffect(() => {
-    const fetchCarouselItems = async () => {
-      if (asset.assetType === AssetType.CAROUSEL) {
-        try {
-          const response = await fetch(`/api/assets/${asset.id}/carousel-items`);
-          if (response.ok) {
-            const data = await response.json();
-            setCarouselItems(data.items || []);
-          }
-        } catch (err) {
-          console.error(`Failed to fetch carousel items for asset ${asset.id}:`, err);
-        }
-      }
-    };
-
-    fetchCarouselItems();
   }, [asset.id, asset.assetType]);
 
   const handleCardClick = (e: React.MouseEvent) => {
@@ -426,11 +404,11 @@ function AssetCardGrid({
               icon={<Eye className="w-4 h-4" />}
               onClick={(e) => {
                 e.stopPropagation();
-                setShowFullScreen(true);
+                router.push(`/assets/${asset.id}`);
               }}
-              aria-label="View full screen"
+              aria-label="View asset"
             >
-              Full Screen
+              View
             </Button>
             <Button
               size="sm"
@@ -525,17 +503,6 @@ function AssetCardGrid({
         </div>
       </div>
     </div>
-
-    {/* Full Screen Asset Viewer */}
-    <FullScreenAssetViewer
-      isOpen={showFullScreen}
-      onClose={() => setShowFullScreen(false)}
-      assetId={asset.id}
-      assetTitle={asset.title}
-      assetType={asset.assetType}
-      publicUrl={previewUrl}
-      carouselItems={carouselItems}
-    />
     </>
   );
 }
@@ -553,47 +520,6 @@ function AssetCardList({
   const router = useRouter();
   const { data: session } = useSession();
   const [showPlatformModal, setShowPlatformModal] = useState(false);
-  const [showFullScreen, setShowFullScreen] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | undefined>(undefined);
-  const [carouselItems, setCarouselItems] = useState<any[]>([]);
-
-  // Fetch preview URL for images and videos
-  useEffect(() => {
-    const fetchPreviewUrl = async () => {
-      if (asset.assetType === AssetType.IMAGE || asset.assetType === AssetType.VIDEO || asset.assetType === AssetType.CAROUSEL) {
-        try {
-          const response = await fetch(`/api/assets/${asset.id}/public-url`);
-          if (response.ok) {
-            const data = await response.json();
-            setPreviewUrl(data.publicUrl);
-          }
-        } catch (err) {
-          console.error(`Failed to fetch preview URL for asset ${asset.id}:`, err);
-        }
-      }
-    };
-
-    fetchPreviewUrl();
-  }, [asset.id, asset.assetType]);
-
-  // Fetch carousel items if it's a carousel
-  useEffect(() => {
-    const fetchCarouselItems = async () => {
-      if (asset.assetType === AssetType.CAROUSEL) {
-        try {
-          const response = await fetch(`/api/assets/${asset.id}/carousel-items`);
-          if (response.ok) {
-            const data = await response.json();
-            setCarouselItems(data.items || []);
-          }
-        } catch (err) {
-          console.error(`Failed to fetch carousel items for asset ${asset.id}:`, err);
-        }
-      }
-    };
-
-    fetchCarouselItems();
-  }, [asset.id, asset.assetType]);
 
   const handleRowClick = (e: React.MouseEvent) => {
     // Don't do anything if clicking action buttons
@@ -720,9 +646,9 @@ function AssetCardList({
             icon={<Eye className="w-4 h-4" />}
             onClick={(e) => {
               e.stopPropagation();
-              setShowFullScreen(true);
+              router.push(`/assets/${asset.id}`);
             }}
-            aria-label="View full screen"
+            aria-label="View asset"
           />
           <Button
             size="sm"
@@ -734,17 +660,6 @@ function AssetCardList({
         </div>
       </td>
     </tr>
-
-    {/* Full Screen Asset Viewer */}
-    <FullScreenAssetViewer
-      isOpen={showFullScreen}
-      onClose={() => setShowFullScreen(false)}
-      assetId={asset.id}
-      assetTitle={asset.title}
-      assetType={asset.assetType}
-      publicUrl={previewUrl}
-      carouselItems={carouselItems}
-    />
     </>
   );
 }

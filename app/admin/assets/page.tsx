@@ -23,7 +23,8 @@ import {
   X,
   Eye,
   Download,
-  Grid3x3
+  Grid3x3,
+  Images
 } from 'lucide-react';
 
 interface Asset {
@@ -148,23 +149,27 @@ function AdminAssetsContent() {
         return <FileText className="w-6 h-6" />;
       case AssetType.LINK:
         return <LinkIcon className="w-6 h-6" />;
+      case AssetType.CAROUSEL:
+        return <Images className="w-6 h-6" />;
       default:
         return <FileText className="w-6 h-6" />;
     }
   };
 
-  const getAssetTypeBadgeVariant = (type: AssetType) => {
+  const getAssetTypeBadgeVariant = (type: AssetType): 'default' | 'primary' | 'success' | 'warning' | 'error' | 'info' => {
     switch (type) {
       case AssetType.IMAGE:
-        return 'blue';
+        return 'primary';
       case AssetType.VIDEO:
-        return 'purple';
+        return 'info';
       case AssetType.DOCUMENT:
-        return 'green';
+        return 'success';
       case AssetType.LINK:
-        return 'gray';
+        return 'default';
+      case AssetType.CAROUSEL:
+        return 'warning';
       default:
-        return 'gray';
+        return 'default';
     }
   };
 
@@ -272,6 +277,7 @@ function AdminAssetsContent() {
     { value: AssetType.VIDEO, label: 'Videos' },
     { value: AssetType.DOCUMENT, label: 'Documents' },
     { value: AssetType.LINK, label: 'Links' },
+    { value: AssetType.CAROUSEL, label: 'Carousels' },
   ];
 
   const statusFilterOptions: SelectOption[] = [
@@ -434,7 +440,7 @@ function AdminAssetsContent() {
                       {asset.title}
                     </h3>
                     <div className="flex gap-2 mt-1">
-                      <Badge variant={getAssetTypeBadgeVariant(asset.assetType) as any} size="sm">
+                      <Badge variant={getAssetTypeBadgeVariant(asset.assetType)} size="sm">
                         {asset.assetType}
                       </Badge>
                       <Badge variant={getStatusBadgeVariant(asset.status) as any} size="sm">

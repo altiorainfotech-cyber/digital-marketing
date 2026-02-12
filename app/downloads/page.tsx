@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Platform, UserRole, AssetType } from '@/types';
 import Link from 'next/link';
-import { Calendar, Clock, Image as ImageIcon, Video, FileText, Link2 } from 'lucide-react';
+import { Calendar, Clock, Image as ImageIcon, Video, FileText, Link2, Images } from 'lucide-react';
 
 interface DownloadRecord {
   id: string;
@@ -103,6 +103,8 @@ function DownloadHistoryContent() {
         return <FileText className="w-5 h-5" />;
       case 'LINK':
         return <Link2 className="w-5 h-5" />;
+      case 'CAROUSEL':
+        return <Images className="w-5 h-5" />;
       default:
         return <FileText className="w-5 h-5" />;
     }
