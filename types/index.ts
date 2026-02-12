@@ -9,7 +9,8 @@ export enum AssetType {
   IMAGE = 'IMAGE',
   VIDEO = 'VIDEO',
   DOCUMENT = 'DOCUMENT',
-  LINK = 'LINK'
+  LINK = 'LINK',
+  CAROUSEL = 'CAROUSEL'
 }
 
 export enum UploadType {
