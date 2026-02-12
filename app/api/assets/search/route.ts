@@ -98,6 +98,7 @@ export const GET = withAuth(async (request, { user }) => {
     const uploaderId = searchParams.get('uploaderId');
     const uploadedBy = searchParams.get('uploadedBy'); // 'me' for current user's uploads
     const assignedTo = searchParams.get('assignedTo'); // 'me' for assets assigned to current user
+    const uploaderScope = searchParams.get('uploaderScope'); // 'mine' | 'all_creators' for CONTENT_CREATOR filtering
     const uploadedAfter = searchParams.get('uploadedAfter');
     const uploadedBefore = searchParams.get('uploadedBefore');
     const approvedAfter = searchParams.get('approvedAfter');
@@ -286,6 +287,17 @@ export const GET = withAuth(async (request, { user }) => {
     // Handle uploadedBy parameter
     if (uploadedBy === 'me') {
       searchParamsObj.uploaderId = user.id;
+    }
+    
+    // Handle uploaderScope parameter for CONTENT_CREATOR users
+    if (uploaderScope && user.role === 'CONTENT_CREATOR') {
+      if (uploaderScope === 'mine') {
+        // Show only current user's uploads
+        searchParamsObj.uploaderId = user.id;
+      } else if (uploaderScope === 'all_creators') {
+        // Show all CONTENT_CREATOR uploads
+        searchParamsObj.uploaderRole = 'CONTENT_CREATOR';
+      }
     }
     
     // Handle assignedTo parameter

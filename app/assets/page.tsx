@@ -44,6 +44,7 @@ interface SearchFilters {
   sortBy: string;
   sortOrder: 'asc' | 'desc';
   date: string;
+  uploaderScope: string; // 'mine' | 'all_creators' | ''
 }
 
 interface Company {
@@ -78,6 +79,7 @@ function AssetListContent() {
     sortBy: 'uploadedAt',
     sortOrder: 'desc',
     date: '',
+    uploaderScope: '',
   });
 
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -139,6 +141,7 @@ function AssetListContent() {
         if (filters.sortBy) params.append('sortBy', filters.sortBy);
         if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
         if (filters.date) params.append('date', filters.date);
+        if (filters.uploaderScope) params.append('uploaderScope', filters.uploaderScope);
 
         const response = await fetch(`/api/assets/search?${params.toString()}`);
 
@@ -215,6 +218,7 @@ function AssetListContent() {
       sortBy: 'uploadedAt',
       sortOrder: 'desc',
       date: '',
+      uploaderScope: '',
     });
     setPage(1);
     setAssets([]); // Clear assets on filter clear
@@ -340,6 +344,7 @@ function AssetListContent() {
     filters.uploadType,
     filters.companyId,
     filters.date,
+    filters.uploaderScope,
   ].filter(Boolean).length;
 
   return (
@@ -460,6 +465,21 @@ function AssetListContent() {
           {showFilters && (
             <div className="space-y-4 pt-4 border-t border-gray-200">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Uploader Scope - Only for CONTENT_CREATOR */}
+                {user?.role === UserRole.CONTENT_CREATOR && (
+                  <Select
+                    label="Show Assets From"
+                    value={filters.uploaderScope}
+                    onChange={(e) => handleFilterChange('uploaderScope', e.target.value)}
+                    options={[
+                      { value: '', label: 'All Assets (Default)' },
+                      { value: 'mine', label: 'My Uploads Only' },
+                      { value: 'all_creators', label: 'All Content Creators' },
+                    ]}
+                    fullWidth
+                  />
+                )}
+
                 {/* Asset Type */}
                 <Select
                   label="Asset Type"
@@ -559,6 +579,18 @@ function AssetListContent() {
           {/* Active Filter Badges */}
           {activeFiltersCount > 0 && (
             <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-200">
+              {filters.uploaderScope && (
+                <Badge variant="primary" className="flex items-center gap-1">
+                  Uploader: {filters.uploaderScope === 'mine' ? 'My Uploads' : 'All Content Creators'}
+                  <button
+                    onClick={() => clearFilter('uploaderScope')}
+                    className="ml-1 hover:text-blue-900"
+                    aria-label="Clear uploader scope filter"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              )}
               {filters.query && (
                 <Badge variant="primary" className="flex items-center gap-1">
                   Search: {filters.query}

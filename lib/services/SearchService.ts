@@ -39,6 +39,7 @@ export interface SearchParams {
   visibility?: VisibilityLevel; // Filter by visibility
   uploadType?: UploadType; // Filter by upload type
   uploaderId?: string; // Filter by uploader
+  uploaderRole?: UserRole; // Filter by uploader role (e.g., CONTENT_CREATOR)
   
   // Assigned assets filters
   assignedToUser?: string; // Filter assets assigned to specific user (excludes their uploads)
@@ -106,6 +107,7 @@ export class SearchService {
       visibility,
       uploadType,
       uploaderId,
+      uploaderRole,
       assignedToUser,
       assignedToRole,
       uploadedAfter,
@@ -253,6 +255,13 @@ export class SearchService {
     // Filter by uploader
     if (uploaderId) {
       where.uploaderId = uploaderId;
+    }
+
+    // Filter by uploader role (e.g., all CONTENT_CREATOR uploads)
+    if (uploaderRole) {
+      where.uploader = {
+        role: uploaderRole,
+      };
     }
 
     // Date range filters
