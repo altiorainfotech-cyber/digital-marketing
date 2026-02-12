@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Platform, UserRole, AssetType } from '@/types';
 import Link from 'next/link';
-import { Calendar, Clock, Image as ImageIcon, Video, FileText, Link2, Images } from 'lucide-react';
+import { Calendar, Clock, Image as ImageIcon, Video, FileText, Link2, Images, ArrowLeft } from 'lucide-react';
 
 interface DownloadRecord {
   id: string;
@@ -74,6 +74,8 @@ function DownloadHistoryContent() {
       }
 
       const data = await response.json();
+      console.log('[Download History] Fetched downloads:', data.downloads);
+      console.log('[Download History] Sample download platforms:', data.downloads[0]?.platforms);
       setDownloads(data.downloads || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load downloads');
@@ -87,9 +89,11 @@ function DownloadHistoryContent() {
     : downloads;
 
   const platformStats = downloads.reduce((acc, download) => {
-    download.platforms.forEach((platform) => {
-      acc[platform] = (acc[platform] || 0) + 1;
-    });
+    if (download.platforms && Array.isArray(download.platforms)) {
+      download.platforms.forEach((platform) => {
+        acc[platform] = (acc[platform] || 0) + 1;
+      });
+    }
     return acc;
   }, {} as Record<Platform, number>);
 
@@ -184,6 +188,13 @@ function DownloadHistoryContent() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span>Back to Dashboard</span>
+          </button>
           <h1 className="text-3xl font-bold text-gray-900">My Download History</h1>
           <p className="mt-2 text-gray-600">
             Track all assets you've downloaded and the platforms you're using them on
@@ -197,25 +208,27 @@ function DownloadHistoryContent() {
         )}
 
         {/* Platform Statistics */}
-        <div className="mb-6 bg-white rounded-lg shadow p-6 border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Platform Usage</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {Object.entries(platformStats).map(([platform, count]) => (
-              <div
-                key={platform}
-                className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200"
-              >
-                <span className="text-2xl">{PLATFORM_ICONS[platform as Platform]}</span>
-                <div>
-                  <div className="text-sm font-medium text-gray-900">
-                    {PLATFORM_LABELS[platform as Platform]}
+        {Object.keys(platformStats).length > 0 && (
+          <div className="mb-6 bg-white rounded-lg shadow p-6 border border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Platform Usage</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {Object.entries(platformStats).map(([platform, count]) => (
+                <div
+                  key={platform}
+                  className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200"
+                >
+                  <span className="text-2xl">{PLATFORM_ICONS[platform as Platform]}</span>
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {PLATFORM_LABELS[platform as Platform]}
+                    </div>
+                    <div className="text-xs text-gray-500">{count} downloads</div>
                   </div>
-                  <div className="text-xs text-gray-500">{count} downloads</div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Filter */}
         <div className="mb-6 bg-white rounded-lg shadow p-4 border border-gray-200">
@@ -365,15 +378,21 @@ function DownloadHistoryContent() {
                             Used on platforms:
                           </div>
                           <div className="flex flex-wrap gap-1.5">
-                            {download.platforms.map((platform) => (
-                              <span
-                                key={platform}
-                                className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium"
-                              >
-                                <span>{PLATFORM_ICONS[platform]}</span>
-                                <span>{PLATFORM_LABELS[platform]}</span>
+                            {download.platforms && download.platforms.length > 0 ? (
+                              download.platforms.map((platform) => (
+                                <span
+                                  key={platform}
+                                  className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium"
+                                >
+                                  <span>{PLATFORM_ICONS[platform]}</span>
+                                  <span>{PLATFORM_LABELS[platform]}</span>
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-gray-500 italic">
+                                No platforms selected
                               </span>
-                            ))}
+                            )}
                           </div>
                         </div>
                       </div>

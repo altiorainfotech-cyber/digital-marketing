@@ -83,6 +83,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       });
     }
 
+    // Add platform downloads for Content Creators
+    if (user?.role === 'CONTENT_CREATOR') {
+      baseItems.splice(4, 0, {
+        id: 'platform-downloads',
+        label: 'Platform Downloads',
+        href: '/platform-downloads',
+        icon: <Download className="w-5 h-5" />,
+        active: pathname?.startsWith('/platform-downloads'),
+      });
+    }
+
     return baseItems;
   };
 
