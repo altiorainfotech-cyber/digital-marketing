@@ -89,7 +89,8 @@ export const POST = withAuth(async (request, { user }) => {
       targetPlatforms: Array.isArray(targetPlatforms) ? targetPlatforms : [],
       campaignName: campaignName?.trim(),
       visibility,
-      status: submitForReview ? AssetStatus.PENDING_REVIEW : AssetStatus.DRAFT,
+      submitForReview,
+      userRole: user.role as any,
     });
 
     return NextResponse.json({

@@ -321,6 +321,8 @@ export async function DELETE(
       });
     } catch (error: any) {
       console.error('Error deleting asset:', error);
+      console.error('Error stack:', error.stack);
+      console.error('Error message:', error.message);
 
       if (error.message === 'Asset not found') {
         return NextResponse.json(
@@ -337,7 +339,7 @@ export async function DELETE(
       }
 
       return NextResponse.json(
-        { error: 'Failed to delete asset' },
+        { error: error.message || 'Failed to delete asset', details: error.toString() },
         { status: 500 }
       );
     }

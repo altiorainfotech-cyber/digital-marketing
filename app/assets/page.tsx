@@ -262,15 +262,22 @@ function AssetListContent() {
     }
 
     try {
-      const deletePromises = Array.from(selectedAssets).map(assetId =>
-        fetch(`/api/assets/${assetId}`, { method: 'DELETE' })
-      );
+      const deletePromises = Array.from(selectedAssets).map(async (assetId) => {
+        const response = await fetch(`/api/assets/${assetId}`, { method: 'DELETE' });
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          console.error(`Failed to delete asset ${assetId}:`, errorData);
+          throw new Error(errorData.error || errorData.details || `Failed to delete asset ${assetId}`);
+        }
+        return response;
+      });
 
-      const results = await Promise.all(deletePromises);
-      const failedDeletes = results.filter(r => !r.ok);
+      const results = await Promise.allSettled(deletePromises);
+      const failedDeletes = results.filter(r => r.status === 'rejected');
 
       if (failedDeletes.length > 0) {
-        throw new Error(`Failed to delete ${failedDeletes.length} asset(s)`);
+        const firstError = (failedDeletes[0] as PromiseRejectedResult).reason;
+        throw new Error(`Failed to delete ${failedDeletes.length} asset(s): ${firstError.message}`);
       }
 
       // Remove deleted assets from state
@@ -278,6 +285,7 @@ function AssetListContent() {
       setSelectedAssets(new Set());
       setTotal(prev => prev - selectedAssets.size);
     } catch (err: any) {
+      console.error('Delete error:', err);
       setError(err.message || 'Failed to delete assets');
     }
   };
@@ -437,6 +445,7 @@ function AssetListContent() {
                     { value: AssetType.VIDEO, label: 'Video' },
                     { value: AssetType.DOCUMENT, label: 'Document' },
                     { value: AssetType.LINK, label: 'Link' },
+                    { value: AssetType.CAROUSEL, label: 'Carousel' },
                   ]}
                   fullWidth
                 />
@@ -607,6 +616,15 @@ function AssetListContent() {
             <button onClick={() => setError('')} className="text-red-900 hover:text-red-700">
               <X className="w-4 h-4" />
             </button>
+          </div>
+        )}
+
+        {/* Selection Mode Indicator */}
+        {!loading && assets.length > 0 && selectedAssets.size === 0 && (
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-6">
+            <p className="text-sm text-gray-600">
+              💡 Click on any asset card to select it. Select multiple assets to perform bulk actions.
+            </p>
           </div>
         )}
 

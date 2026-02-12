@@ -350,18 +350,14 @@ function AssetUploadContent() {
           ));
 
           try {
-            // Get presigned URL for this specific file
-            const presignResponse = await fetch('/api/assets/presign', {
+            // Get presigned URL for carousel item (doesn't create Asset record)
+            const presignResponse = await fetch('/api/assets/carousel/presign', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                title: `${title || 'Carousel'} - Item ${i + 1}`,
-                assetType: file.type.startsWith('video/') ? AssetType.VIDEO : AssetType.IMAGE,
-                uploadType,
-                companyId: uploadType === UploadType.SEO ? companyId : undefined,
+                carouselId,
                 fileName: file.name,
                 contentType: file.type,
-                visibility: isAdmin && visibility ? visibility : undefined,
               }),
             });
 

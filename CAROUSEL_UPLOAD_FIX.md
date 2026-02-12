@@ -1,170 +1,128 @@
-# Carousel Upload Fix
+# Carousel Asset Upload and Display Fix
 
-## Problem
-Carousel assets were being created but no carousel items were being saved to the database, resulting in "No carousel items found" message.
+## Issues Fixed
 
-## Root Cause
-The original implementation was generating presigned URLs in the carousel creation endpoint but not actually creating CarouselItem records after files were uploaded.
+### Issue 1: Carousel Assets Showing as Multiple Cards
+When a content creator uploaded carousel assets, each file was being created as a separate asset instead of being grouped as carousel items under one parent carousel asset.
 
-## Solution
+**Root Cause**: The upload flow was using `/api/assets/presign` which creates individual Asset records for each file, instead of creating CarouselItem records linked to a parent carousel.
 
-### 3-Step Upload Process
+**Solution**: 
+- Created new endpoint `/api/assets/carousel/presign` that generates presigned URLs WITHOUT creating Asset records
+- Updated the upload page to use the new carousel-specific presign endpoint
+- This ensures only ONE carousel Asset is created with multiple CarouselItem records
 
-#### Step 1: Create Carousel Asset
-**Endpoint:** `POST /api/assets/carousel`
+### Issue 2: Carousel Assets Not Displaying All Items
+When viewing a carousel asset on the asset detail page, all carousel items weren't being displayed properly in the carousel slider.
 
-Creates the parent carousel asset with metadata:
-- Title, description, tags
-- Upload type (SEO/DOC)
-- Company (for SEO uploads)
-- Status (DRAFT or PENDING_REVIEW)
-- Placeholder storage URL
+**Root Cause**: The carousel items were being fetched correctly, but the display logic needed enhancement.
 
-**Returns:** `{ carouselId: string }`
+**Solution**:
+- Enhanced the CarouselSlider component to properly display all items
+- Updated the asset detail page to fetch and display carousel items
+- Added proper error handling for carousel item loading
 
-#### Step 2: Upload Individual Files
-**Endpoint:** `POST /api/assets/presign` (for each file)
+### Issue 3: Carousel Item Images Not Loading (Public URL Error)
+Carousel item images were failing to load with error: `Image failed to load: https://pub-xxx.r2.dev/r2://digitalmarketing/assets/...`
 
-For each file in the carousel:
-1. Get presigned URL from `/api/assets/presign`
-2. Upload file to presigned URL (R2/Stream/Images)
-3. Collect storage URL, file size, and mime type
+**Root Cause**: The public URL was being constructed incorrectly by directly appending the storage URL (which includes `r2://bucketname/` prefix) to the R2 public URL.
 
-**Client-side logic:**
-- Shows progress for each file
-- Handles errors per file
-- Collects upload metadata
+**Solution**:
+- Updated `/api/assets/[id]/carousel-items` to use the `convertToPublicUrl` utility function
+- This properly strips the `r2://bucketname/` prefix and constructs valid public URLs
+- Example: `r2://bucket/assets/id/file.jpg` → `https://pub-xxx.r2.dev/assets/id/file.jpg`
 
-#### Step 3: Finalize Carousel
-**Endpoint:** `POST /api/assets/carousel/finalize`
+## Changes Made
 
-Creates CarouselItem records for all uploaded files:
-- Links items to parent carousel
-- Stores storage URLs
-- Sets file metadata (size, mime type, type)
-- Orders items sequentially
-- Updates parent carousel storage URL to first item
+### 1. New API Endpoint: `/app/api/assets/carousel/presign/route.ts`
+- Generates presigned URLs for carousel item uploads
+- Does NOT create Asset records (only returns upload URLs)
+- Validates carousel ownership and type
+- Returns storage URL for later CarouselItem creation
 
-**Request:**
-```json
-{
-  "carouselId": "string",
-  "items": [
-    {
-      "storageUrl": "string",
-      "fileSize": number,
-      "mimeType": "string"
-    }
-  ]
-}
-```
+### 2. Updated Upload Flow: `/app/assets/upload/page.tsx`
+- Changed carousel upload to use `/api/assets/carousel/presign` instead of `/api/assets/presign`
+- Simplified the upload request to only include carousel ID, file name, and content type
+- Maintains the same finalization flow to create CarouselItem records
 
-**Returns:** `{ success: true, itemCount: number }`
+### 3. Enhanced Asset Card Display: `/components/assets/AssetCard.tsx`
+- Added carousel icon with indicator badge
+- Updated preview logic to show carousel badge on thumbnails
+- Added "Carousel" label in asset type display
+- Enabled preview URL fetching for carousel assets
+- Shows first carousel item as the card thumbnail
 
-## Implementation Details
+### 4. Updated Asset Listing: `/app/assets/page.tsx`
+- Added "Carousel" option to asset type filter
+- Carousel assets now appear as single cards in grid/list/company views
 
-### Upload Page (app/assets/upload/page.tsx)
+### 5. Fixed API Route Handlers
+- Fixed `/app/api/assets/[id]/carousel-items/route.ts` to properly handle params with Next.js 16
+- Fixed `/app/api/assets/[id]/carousel-items/complete/route.ts` authentication
 
-```javascript
-// 1. Create carousel
-const { carouselId } = await fetch('/api/assets/carousel', { ... });
+## How It Works Now
 
-// 2. Upload each file
-const uploadedItems = [];
-for (let i = 0; i < files.length; i++) {
-  const { uploadUrl, storageUrl } = await fetch('/api/assets/presign', { ... });
-  await uploadToPresignedUrl(uploadUrl, file);
-  uploadedItems.push({ storageUrl, fileSize, mimeType });
-}
+### Upload Flow:
+1. User selects "Carousel" asset type and uploads multiple files
+2. System creates ONE carousel Asset record with placeholder storage URL
+3. For each file:
+   - Request presigned URL from `/api/assets/carousel/presign`
+   - Upload file directly to R2 using presigned URL
+   - Collect storage URL and metadata
+4. Finalize carousel by creating CarouselItem records via `/api/assets/carousel/finalize`
+5. Update parent carousel Asset with first item's storage URL
 
-// 3. Finalize carousel
-await fetch('/api/assets/carousel/finalize', {
-  body: JSON.stringify({ carouselId, items: uploadedItems })
-});
-```
+### Display Flow:
+1. Asset listing shows carousel as a single card with:
+   - Preview of first carousel item
+   - "Carousel" badge indicator
+   - Proper asset type label
+2. Asset detail page:
+   - Fetches all carousel items via `/api/assets/[id]/carousel-items`
+   - Displays items in CarouselSlider component
+   - Shows navigation controls and thumbnails
+   - Allows viewing all items in the carousel
 
-### Carousel Creation API (app/api/assets/carousel/route.ts)
+## Testing Recommendations
 
-Simplified to only create the parent asset:
-- Validates input (title, upload type, company, file count)
-- Creates Asset with type CAROUSEL
-- Returns carousel ID
-- No longer generates presigned URLs (handled per-file)
+1. **Upload Test**: 
+   - Login as CONTENT_CREATOR
+   - Go to /assets/upload
+   - Select "Carousel" asset type
+   - Upload 3-5 images/videos
+   - Verify only ONE asset card appears in the assets list
 
-### Finalize API (app/api/assets/carousel/finalize/route.ts)
+2. **Display Test**:
+   - Click on the carousel asset card
+   - Verify all uploaded items appear in the carousel slider
+   - Test navigation between items
+   - Verify thumbnails show correctly
 
-New endpoint that:
-- Validates carousel exists and belongs to user
-- Creates CarouselItem records for each uploaded file
-- Sets item order (0, 1, 2, ...)
-- Determines item type (IMAGE or VIDEO) from mime type
-- Updates parent carousel with first item's storage URL
-- Calculates total file size
+3. **Filter Test**:
+   - Go to /assets
+   - Filter by "Carousel" asset type
+   - Verify only carousel assets appear
 
-## Database Schema
+## Files Modified
 
-### CarouselItem Model
-```prisma
-model CarouselItem {
-  id          String    @id @default(cuid())
-  carouselId  String
-  storageUrl  String
-  fileSize    Int?
-  mimeType    String?
-  itemType    AssetType  // IMAGE or VIDEO
-  order       Int       @default(0)
-  createdAt   DateTime  @default(now())
-  Carousel    Asset     @relation(fields: [carouselId], references: [id], onDelete: Cascade)
+- `app/api/assets/carousel/presign/route.ts` (NEW)
+- `app/assets/upload/page.tsx`
+- `components/assets/AssetCard.tsx`
+- `app/assets/page.tsx`
+- `app/api/assets/[id]/carousel-items/route.ts`
+- `app/api/assets/[id]/carousel-items/complete/route.ts`
+- `app/api/assets/carousel/route.ts`
 
-  @@index([carouselId])
-}
-```
+## Database Schema (No Changes Required)
 
-## Benefits
+The existing schema already supports this properly:
+- `Asset` table with `assetType = 'CAROUSEL'`
+- `CarouselItem` table with `carouselId` foreign key
+- Proper cascade delete relationships
 
-1. **Reliable**: Each step is independent and can be retried
-2. **Progress Tracking**: Shows upload progress for each file
-3. **Error Handling**: Handles per-file errors gracefully
-4. **Flexible**: Uses existing presign endpoint for file uploads
-5. **Consistent**: Same upload flow as individual assets
-6. **Atomic**: Finalize step ensures all items are saved together
+## Notes
 
-## Testing
-
-To test the carousel upload:
-
-1. Login as CONTENT_CREATOR
-2. Navigate to /assets/upload
-3. Select "Carousel (Multiple Images/Videos)" as asset type
-4. Upload 2 or more images/videos
-5. Click "Upload" or "Upload & Submit for Review"
-6. Verify:
-   - Progress shows for each file
-   - All files upload successfully
-   - Redirects to carousel detail page
-   - Carousel items are visible
-   - No "No carousel items found" message
-
-## Error Scenarios
-
-### Scenario 1: File Upload Fails
-- Error shown for specific file
-- Other files continue uploading
-- User can retry failed file
-
-### Scenario 2: Finalize Fails
-- Carousel asset exists but no items
-- User sees "No carousel items found"
-- Can re-upload or delete carousel
-
-### Scenario 3: Permission Denied
-- 403 error if trying to finalize someone else's carousel
-- Clear error message shown
-
-## Future Enhancements
-
-1. **Retry Logic**: Auto-retry failed uploads
-2. **Resume Upload**: Continue from last successful file
-3. **Batch Finalize**: Finalize in batches for large carousels
-4. **Thumbnail Generation**: Generate thumbnails during finalize
-5. **Validation**: Validate files before upload (size, type, dimensions)
+- Carousel assets show the first item's preview as the card thumbnail
+- File size shown is the total of all carousel items
+- Carousel assets can be filtered, searched, and managed like other assets
+- All existing permissions and visibility rules apply to carousel assets

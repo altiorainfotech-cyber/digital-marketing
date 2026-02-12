@@ -17,7 +17,7 @@ import { Badge } from '@/lib/design-system/components/primitives/Badge';
 import { Chip } from '@/lib/design-system/components/primitives/Chip';
 import { Breadcrumb } from '@/lib/design-system/components/composite/Breadcrumb';
 import { LoadingState } from '@/lib/design-system/components/patterns/LoadingState';
-import { ShareModal, PlatformDownloadModal } from '@/components/assets';
+import { ShareModal, PlatformDownloadModal, FullScreenAssetViewer } from '@/components/assets';
 import { CarouselSlider } from '@/components/CarouselSlider';
 import { 
   ArrowLeft,
@@ -136,6 +136,9 @@ function AssetDetailContent() {
   
   // Platform download modal state
   const [showPlatformModal, setShowPlatformModal] = useState(false);
+
+  // Full screen viewer state
+  const [showFullScreen, setShowFullScreen] = useState(false);
 
   const isAdmin = user?.role === UserRole.ADMIN;
   const isOwner = user?.id === asset?.uploaderId;
@@ -413,6 +416,14 @@ function AssetDetailContent() {
               <Breadcrumb items={breadcrumbItems} />
             </div>
             <div className="flex items-center gap-3">
+              {/* Full Screen View Button */}
+              <Button
+                variant="outline"
+                icon={<Eye className="w-4 h-4" />}
+                onClick={() => setShowFullScreen(true)}
+              >
+                Full Screen
+              </Button>
               {canShare && (
                 <Button
                   variant="outline"
@@ -870,6 +881,19 @@ function AssetDetailContent() {
         onClose={() => setShowPlatformModal(false)}
         onConfirm={performDownload}
         assetTitle={asset?.title || 'Asset'}
+      />
+
+      {/* Full Screen Asset Viewer */}
+      <FullScreenAssetViewer
+        isOpen={showFullScreen}
+        onClose={() => setShowFullScreen(false)}
+        assetId={assetId}
+        assetTitle={asset.title}
+        assetType={asset.assetType}
+        publicUrl={publicUrl}
+        carouselItems={carouselItems}
+        onShare={canShare ? () => setShowShareModal(true) : undefined}
+        canShare={canShare}
       />
     </div>
   );

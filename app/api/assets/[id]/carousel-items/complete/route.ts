@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/lib/auth/api-middleware';
+import { verifyAuth } from '@/lib/auth/api-middleware';
 import prisma from '@/lib/prisma';
 import { AssetType } from '@/app/generated/prisma';
 
@@ -16,9 +16,21 @@ interface CarouselItemData {
   order: number;
 }
 
-export const POST = withAuth(async (request, { user, params }) => {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  // Verify authentication
+  const authContext = await verifyAuth(request);
+  if (!authContext) {
+    return NextResponse.json(
+      { error: 'Unauthorized - Authentication required' },
+      { status: 401 }
+    );
+  }
+
   try {
-    const assetId = params?.id as string;
+    const { id: assetId } = await params;
     const body = await request.json();
     const { items } = body as { items: CarouselItemData[] };
 
@@ -56,7 +68,7 @@ export const POST = withAuth(async (request, { user, params }) => {
     }
 
     // Verify user owns the asset
-    if (asset.uploaderId !== user.id) {
+    if (asset.uploaderId !== authContext.user.id) {
       return NextResponse.json(
         { error: 'You do not have permission to modify this asset' },
         { status: 403 }
@@ -90,4 +102,4 @@ export const POST = withAuth(async (request, { user, params }) => {
       { status: 500 }
     );
   }
-});
+}

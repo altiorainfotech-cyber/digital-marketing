@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { AssetType, AssetStatus, Platform, UserRole } from '@/app/generated/prisma';
 import { PlatformDownloadModal } from './PlatformDownloadModal';
+import { FullScreenAssetViewer } from './FullScreenAssetViewer';
 import { initiateAssetDownload } from '@/lib/utils/downloadHelper';
 
 export interface AssetCardData {
@@ -73,6 +74,15 @@ function getAssetTypeIcon(assetType: AssetType) {
       return <FileText className="w-8 h-8" />;
     case AssetType.LINK:
       return <LinkIcon className="w-8 h-8" />;
+    case AssetType.CAROUSEL:
+      return (
+        <div className="relative">
+          <FileImage className="w-8 h-8" />
+          <div className="absolute -bottom-1 -right-1 bg-blue-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+            <span className="text-[10px]">+</span>
+          </div>
+        </div>
+      );
     default:
       return <FileText className="w-8 h-8" />;
   }
@@ -116,6 +126,58 @@ function formatDate(dateString: string): string {
  * Render asset preview thumbnail
  */
 function AssetPreview({ asset, previewUrl, hasError }: { asset: AssetCardData; previewUrl?: string; hasError?: boolean }) {
+  // For carousel, show the preview with a badge indicating multiple items
+  if (asset.assetType === AssetType.CAROUSEL) {
+    if (!previewUrl) {
+      return (
+        <div className="flex items-center justify-center h-full w-full">
+          <div className="text-center">
+            <div className="text-blue-600 mb-2 flex justify-center">
+              {getAssetTypeIcon(asset.assetType)}
+            </div>
+            <p className="text-sm text-gray-600 font-medium">Carousel</p>
+            {hasError && (
+              <p className="text-xs text-red-500 mt-1">No preview access</p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="relative w-full h-full">
+        <img
+          src={previewUrl}
+          alt={asset.title}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            e.currentTarget.style.display = 'none';
+            const parent = e.currentTarget.parentElement;
+            if (parent) {
+              parent.innerHTML = `
+                <div class="flex items-center justify-center h-full">
+                  <div class="text-center">
+                    <svg class="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <p class="text-xs text-gray-500">Carousel preview failed</p>
+                  </div>
+                </div>
+              `;
+            }
+          }}
+        />
+        {/* Carousel indicator badge */}
+        <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1 shadow-lg">
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <span>Carousel</span>
+        </div>
+      </div>
+    );
+  }
+
   // Show fallback icon while loading or if there's an error
   if ((asset.assetType === AssetType.IMAGE || asset.assetType === AssetType.VIDEO) && !previewUrl) {
     return (
@@ -223,11 +285,13 @@ function AssetCardGrid({
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [previewError, setPreviewError] = useState(false);
   const [showPlatformModal, setShowPlatformModal] = useState(false);
+  const [showFullScreen, setShowFullScreen] = useState(false);
+  const [carouselItems, setCarouselItems] = useState<any[]>([]);
 
   // Fetch preview URL for images and videos
   useEffect(() => {
     const fetchPreviewUrl = async () => {
-      if (asset.assetType === AssetType.IMAGE || asset.assetType === AssetType.VIDEO) {
+      if (asset.assetType === AssetType.IMAGE || asset.assetType === AssetType.VIDEO || asset.assetType === AssetType.CAROUSEL) {
         setLoadingPreview(true);
         setPreviewError(false);
         try {
@@ -252,9 +316,39 @@ function AssetCardGrid({
     fetchPreviewUrl();
   }, [asset.id, asset.assetType]);
 
+  // Fetch carousel items if it's a carousel
+  useEffect(() => {
+    const fetchCarouselItems = async () => {
+      if (asset.assetType === AssetType.CAROUSEL) {
+        try {
+          const response = await fetch(`/api/assets/${asset.id}/carousel-items`);
+          if (response.ok) {
+            const data = await response.json();
+            setCarouselItems(data.items || []);
+          }
+        } catch (err) {
+          console.error(`Failed to fetch carousel items for asset ${asset.id}:`, err);
+        }
+      }
+    };
+
+    fetchCarouselItems();
+  }, [asset.id, asset.assetType]);
+
   const handleCardClick = (e: React.MouseEvent) => {
-    // Don't navigate if clicking checkbox or action buttons
-    if ((e.target as HTMLElement).closest('input, button')) {
+    // Don't do anything if clicking action buttons
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
+    
+    // If checkboxes are shown, clicking anywhere (including checkbox) should toggle selection
+    if (showCheckbox && onSelect) {
+      onSelect(asset.id, !selected);
+      return;
+    }
+    
+    // Otherwise, navigate to asset detail (but not if clicking checkbox)
+    if ((e.target as HTMLElement).closest('input')) {
       return;
     }
     router.push(`/assets/${asset.id}`);
@@ -293,20 +387,21 @@ function AssetCardGrid({
       />
       
       <div
-        className="bg-white rounded-lg shadow hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden group relative"
+        className={`bg-white rounded-lg shadow hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden group relative ${
+          selected ? 'ring-2 ring-blue-500 shadow-lg' : ''
+        }`}
         onMouseEnter={() => setShowActions(true)}
         onMouseLeave={() => setShowActions(false)}
         onClick={handleCardClick}
       >
       {/* Checkbox */}
       {showCheckbox && (
-        <div className="absolute top-3 left-3 z-10">
+        <div 
+          className="absolute top-3 left-3 z-10 pointer-events-none"
+        >
           <Checkbox
             checked={selected || false}
-            onChange={(e) => {
-              e.stopPropagation();
-              onSelect?.(asset.id, !selected);
-            }}
+            readOnly
             aria-label={`Select ${asset.title}`}
           />
         </div>
@@ -331,11 +426,11 @@ function AssetCardGrid({
               icon={<Eye className="w-4 h-4" />}
               onClick={(e) => {
                 e.stopPropagation();
-                router.push(`/assets/${asset.id}`);
+                setShowFullScreen(true);
               }}
-              aria-label="View asset"
+              aria-label="View full screen"
             >
-              View
+              Full Screen
             </Button>
             <Button
               size="sm"
@@ -410,7 +505,7 @@ function AssetCardGrid({
         {/* Metadata */}
         <div className="text-xs text-gray-500 space-y-1">
           <div className="flex items-center justify-between">
-            <span>{asset.assetType}</span>
+            <span>{asset.assetType === AssetType.CAROUSEL ? 'Carousel' : asset.assetType}</span>
             <span>{formatFileSize(asset.fileSize)}</span>
           </div>
           <div>Uploaded: {formatDate(asset.uploadedAt)}</div>
@@ -430,6 +525,17 @@ function AssetCardGrid({
         </div>
       </div>
     </div>
+
+    {/* Full Screen Asset Viewer */}
+    <FullScreenAssetViewer
+      isOpen={showFullScreen}
+      onClose={() => setShowFullScreen(false)}
+      assetId={asset.id}
+      assetTitle={asset.title}
+      assetType={asset.assetType}
+      publicUrl={previewUrl}
+      carouselItems={carouselItems}
+    />
     </>
   );
 }
@@ -447,10 +553,62 @@ function AssetCardList({
   const router = useRouter();
   const { data: session } = useSession();
   const [showPlatformModal, setShowPlatformModal] = useState(false);
+  const [showFullScreen, setShowFullScreen] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | undefined>(undefined);
+  const [carouselItems, setCarouselItems] = useState<any[]>([]);
+
+  // Fetch preview URL for images and videos
+  useEffect(() => {
+    const fetchPreviewUrl = async () => {
+      if (asset.assetType === AssetType.IMAGE || asset.assetType === AssetType.VIDEO || asset.assetType === AssetType.CAROUSEL) {
+        try {
+          const response = await fetch(`/api/assets/${asset.id}/public-url`);
+          if (response.ok) {
+            const data = await response.json();
+            setPreviewUrl(data.publicUrl);
+          }
+        } catch (err) {
+          console.error(`Failed to fetch preview URL for asset ${asset.id}:`, err);
+        }
+      }
+    };
+
+    fetchPreviewUrl();
+  }, [asset.id, asset.assetType]);
+
+  // Fetch carousel items if it's a carousel
+  useEffect(() => {
+    const fetchCarouselItems = async () => {
+      if (asset.assetType === AssetType.CAROUSEL) {
+        try {
+          const response = await fetch(`/api/assets/${asset.id}/carousel-items`);
+          if (response.ok) {
+            const data = await response.json();
+            setCarouselItems(data.items || []);
+          }
+        } catch (err) {
+          console.error(`Failed to fetch carousel items for asset ${asset.id}:`, err);
+        }
+      }
+    };
+
+    fetchCarouselItems();
+  }, [asset.id, asset.assetType]);
 
   const handleRowClick = (e: React.MouseEvent) => {
-    // Don't navigate if clicking checkbox or action buttons
-    if ((e.target as HTMLElement).closest('input, button')) {
+    // Don't do anything if clicking action buttons
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
+    
+    // If checkboxes are shown, clicking anywhere (including checkbox) should toggle selection
+    if (showCheckbox && onSelect) {
+      onSelect(asset.id, !selected);
+      return;
+    }
+    
+    // Otherwise, navigate to asset detail (but not if clicking checkbox)
+    if ((e.target as HTMLElement).closest('input')) {
       return;
     }
     router.push(`/assets/${asset.id}`);
@@ -489,18 +647,19 @@ function AssetCardList({
       />
       
       <tr
-        className="hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+        className={`hover:bg-gray-50 cursor-pointer transition-colors duration-150 ${
+          selected ? 'bg-blue-50' : ''
+        }`}
         onClick={handleRowClick}
       >
       {/* Checkbox */}
       {showCheckbox && (
-        <td className="px-6 py-4 whitespace-nowrap">
+        <td 
+          className="px-6 py-4 whitespace-nowrap pointer-events-none"
+        >
           <Checkbox
             checked={selected || false}
-            onChange={(e) => {
-              e.stopPropagation();
-              onSelect?.(asset.id, !selected);
-            }}
+            readOnly
             aria-label={`Select ${asset.title}`}
           />
         </td>
@@ -532,7 +691,7 @@ function AssetCardList({
 
       {/* Type */}
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-        {asset.assetType}
+        {asset.assetType === AssetType.CAROUSEL ? 'Carousel' : asset.assetType}
       </td>
 
       {/* Status */}
@@ -561,9 +720,9 @@ function AssetCardList({
             icon={<Eye className="w-4 h-4" />}
             onClick={(e) => {
               e.stopPropagation();
-              router.push(`/assets/${asset.id}`);
+              setShowFullScreen(true);
             }}
-            aria-label="View asset"
+            aria-label="View full screen"
           />
           <Button
             size="sm"
@@ -575,6 +734,17 @@ function AssetCardList({
         </div>
       </td>
     </tr>
+
+    {/* Full Screen Asset Viewer */}
+    <FullScreenAssetViewer
+      isOpen={showFullScreen}
+      onClose={() => setShowFullScreen(false)}
+      assetId={asset.id}
+      assetTitle={asset.title}
+      assetType={asset.assetType}
+      publicUrl={previewUrl}
+      carouselItems={carouselItems}
+    />
     </>
   );
 }

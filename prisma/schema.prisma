@@ -130,7 +130,7 @@ model AuditLog {
   userAgent    String?
   createdAt    DateTime     @default(now())
   assetId      String?
-  Asset        Asset?       @relation(fields: [assetId], references: [id])
+  Asset        Asset?       @relation(fields: [assetId], references: [id], onDelete: SetNull)
   User         User         @relation(fields: [userId], references: [id])
 
   @@index([action])

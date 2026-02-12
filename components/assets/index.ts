@@ -12,3 +12,5 @@ export type { CalendarFilterProps } from './CalendarFilter';
 export { PlatformSelectionModal } from './PlatformSelectionModal';
 export { PlatformDownloadModal } from './PlatformDownloadModal';
 export type { PlatformDownloadModalProps } from './PlatformDownloadModal';
+export { FullScreenAssetViewer } from './FullScreenAssetViewer';
+export type { FullScreenAssetViewerProps } from './FullScreenAssetViewer';
