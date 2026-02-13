@@ -19,6 +19,10 @@ interface DownloadRecord {
     assetType: string;
     description?: string;
     storageUrl?: string;
+    company?: {
+      id: string;
+      name: string;
+    } | null;
   };
 }
 
@@ -53,6 +57,9 @@ function DownloadHistoryContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterPlatform, setFilterPlatform] = useState<Platform | ''>('');
+  const [filterCompany, setFilterCompany] = useState<string>('');
+  const [filterDateFrom, setFilterDateFrom] = useState<string>('');
+  const [filterDateTo, setFilterDateTo] = useState<string>('');
 
   useEffect(() => {
     if (session?.user?.role !== UserRole.SEO_SPECIALIST) {
@@ -84,9 +91,18 @@ function DownloadHistoryContent() {
     }
   };
 
-  const filteredDownloads = filterPlatform
-    ? downloads.filter((d) => d.platforms.includes(filterPlatform))
-    : downloads;
+  const filteredDownloads = downloads.filter((download) => {
+    const matchesPlatform = !filterPlatform || download.platforms.includes(filterPlatform);
+    const matchesCompany = !filterCompany || 
+      download.asset.company?.name.toLowerCase().includes(filterCompany.toLowerCase());
+    
+    // Date filtering
+    const downloadDate = new Date(download.downloadedAt);
+    const matchesDateFrom = !filterDateFrom || downloadDate >= new Date(filterDateFrom);
+    const matchesDateTo = !filterDateTo || downloadDate <= new Date(filterDateTo + 'T23:59:59');
+    
+    return matchesPlatform && matchesCompany && matchesDateFrom && matchesDateTo;
+  });
 
   const platformStats = downloads.reduce((acc, download) => {
     if (download.platforms && Array.isArray(download.platforms)) {
@@ -96,6 +112,15 @@ function DownloadHistoryContent() {
     }
     return acc;
   }, {} as Record<Platform, number>);
+
+  // Get unique companies for filter dropdown
+  const uniqueCompanies = Array.from(
+    new Set(
+      downloads
+        .map(d => d.asset.company?.name)
+        .filter((name): name is string => !!name)
+    )
+  ).sort();
 
   const getAssetIcon = (assetType: string) => {
     switch (assetType) {
@@ -232,13 +257,14 @@ function DownloadHistoryContent() {
 
         {/* Filter - Mobile optimized */}
         <div className="mb-4 sm:mb-6 bg-white rounded-lg shadow p-4 border border-gray-200">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-            <label className="text-sm font-medium text-gray-700 flex-shrink-0">Filter by Platform:</label>
-            <div className="flex items-center gap-3 flex-1">
+          <h3 className="text-sm font-semibold text-gray-900 mb-3">Filters</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Platform</label>
               <select
                 value={filterPlatform}
                 onChange={(e) => setFilterPlatform(e.target.value as Platform | '')}
-                className="flex-1 sm:flex-initial px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               >
                 <option value="">All Platforms</option>
                 {Object.entries(PLATFORM_LABELS).map(([value, label]) => (
@@ -247,16 +273,58 @@ function DownloadHistoryContent() {
                   </option>
                 ))}
               </select>
-              {filterPlatform && (
-                <button
-                  onClick={() => setFilterPlatform('')}
-                  className="text-sm text-blue-600 hover:text-blue-800 whitespace-nowrap"
-                >
-                  Clear
-                </button>
-              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Company</label>
+              <select
+                value={filterCompany}
+                onChange={(e) => setFilterCompany(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              >
+                <option value="">All Companies</option>
+                {uniqueCompanies.map((company) => (
+                  <option key={company} value={company}>
+                    {company}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Date From</label>
+              <input
+                type="date"
+                value={filterDateFrom}
+                onChange={(e) => setFilterDateFrom(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Date To</label>
+              <input
+                type="date"
+                value={filterDateTo}
+                onChange={(e) => setFilterDateTo(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              />
             </div>
           </div>
+
+          {(filterPlatform || filterCompany || filterDateFrom || filterDateTo) && (
+            <button
+              onClick={() => {
+                setFilterPlatform('');
+                setFilterCompany('');
+                setFilterDateFrom('');
+                setFilterDateTo('');
+              }}
+              className="mt-3 w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+            >
+              Clear All Filters
+            </button>
+          )}
         </div>
 
         {/* Downloads List - Mobile optimized */}
@@ -357,6 +425,16 @@ function DownloadHistoryContent() {
                           <p className="text-xs sm:text-sm text-gray-600 mb-3 line-clamp-2">
                             {download.asset.description}
                           </p>
+                        )}
+
+                        {/* Company */}
+                        {download.asset.company && (
+                          <div className="mb-3 pb-3 border-b border-gray-200">
+                            <div className="text-xs text-gray-500">Company</div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {download.asset.company.name}
+                            </div>
+                          </div>
                         )}
 
                         {/* Download Date & Time - Mobile optimized */}

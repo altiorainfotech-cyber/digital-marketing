@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { AssetType, AssetStatus, Platform, UserRole } from '@/app/generated/prisma';
 import { PlatformDownloadModal } from './PlatformDownloadModal';
-import { initiateAssetDownload } from '@/lib/utils/downloadHelper';
+import { initiateAssetDownload, initiateCarouselDownload } from '@/lib/utils/downloadHelper';
 
 export interface AssetCardData {
   id: string;
@@ -341,13 +341,18 @@ function AssetCardGrid({
       return;
     }
     
-    // For other users, proceed with direct download
+    // For ADMIN, CONTENT_CREATOR and other users, proceed with direct download
     await performDownload([]);
   };
 
   const performDownload = async (platforms: Platform[]) => {
     try {
-      await initiateAssetDownload(asset.id, platforms, asset.title);
+      // Check if this is a CAROUSEL asset - download all items as ZIP
+      if (asset.assetType === AssetType.CAROUSEL) {
+        await initiateCarouselDownload(asset.id, platforms, asset.title);
+      } else {
+        await initiateAssetDownload(asset.id, platforms, asset.title);
+      }
       setShowPlatformModal(false);
     } catch (err: any) {
       console.error('Download error:', err);
@@ -549,13 +554,18 @@ function AssetCardList({
       return;
     }
     
-    // For other users, proceed with direct download
+    // For ADMIN, CONTENT_CREATOR and other users, proceed with direct download
     await performDownload([]);
   };
 
   const performDownload = async (platforms: Platform[]) => {
     try {
-      await initiateAssetDownload(asset.id, platforms, asset.title);
+      // Check if this is a CAROUSEL asset - download all items as ZIP
+      if (asset.assetType === AssetType.CAROUSEL) {
+        await initiateCarouselDownload(asset.id, platforms, asset.title);
+      } else {
+        await initiateAssetDownload(asset.id, platforms, asset.title);
+      }
       setShowPlatformModal(false);
     } catch (err: any) {
       console.error('Download error:', err);

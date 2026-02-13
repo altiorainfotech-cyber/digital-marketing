@@ -79,6 +79,13 @@ export async function GET(request: NextRequest) {
               name: true,
               email: true,
               role: true,
+              companyId: true,
+              Company: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
             },
           },
           Asset: {
@@ -88,11 +95,18 @@ export async function GET(request: NextRequest) {
               assetType: true,
               description: true,
               uploaderId: true,
+              companyId: true,
               uploader: {
                 select: {
                   id: true,
                   name: true,
                   email: true,
+                },
+              },
+              Company: {
+                select: {
+                  id: true,
+                  name: true,
                 },
               },
             },
@@ -124,13 +138,17 @@ export async function GET(request: NextRequest) {
             downloadedAt: download.downloadedAt,
             platforms: download.platforms as Platform[],
             platformIntent: download.platformIntent as Platform | undefined,
-            downloadedBy: download.User,
+            downloadedBy: {
+              ...download.User,
+              company: download.User.Company,
+            },
             asset: {
               id: download.Asset.id,
               title: download.Asset.title,
               assetType: download.Asset.assetType,
               description: download.Asset.description,
               uploader: download.Asset.uploader,
+              company: download.Asset.Company,
             },
             platformUsages: platformUsages.length > 0 ? platformUsages.map(usage => ({
               platform: usage.platform as Platform,

@@ -52,6 +52,13 @@ export async function GET(request: NextRequest) {
               assetType: true,
               description: true,
               storageUrl: true,
+              companyId: true,
+              Company: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
             },
           },
         },
@@ -62,7 +69,10 @@ export async function GET(request: NextRequest) {
         assetId: download.assetId,
         downloadedAt: download.downloadedAt,
         platforms: download.platforms as Platform[],
-        asset: download.Asset,
+        asset: {
+          ...download.Asset,
+          company: download.Asset.Company,
+        },
       }));
 
       return NextResponse.json(

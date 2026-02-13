@@ -16,6 +16,10 @@ interface PlatformDownloadRecord {
     id: string;
     name: string;
     email: string;
+    company?: {
+      id: string;
+      name: string;
+    } | null;
   };
   asset: {
     id: string;
@@ -27,6 +31,10 @@ interface PlatformDownloadRecord {
       name: string;
       email: string;
     };
+    company?: {
+      id: string;
+      name: string;
+    } | null;
   };
   platformUsages?: Array<{
     platform: Platform;
@@ -68,6 +76,9 @@ export default function PlatformDownloadsPage() {
   const [error, setError] = useState<string | null>(null);
   const [filterPlatform, setFilterPlatform] = useState<Platform | ''>('');
   const [filterUser, setFilterUser] = useState<string>('');
+  const [filterCompany, setFilterCompany] = useState<string>('');
+  const [filterDateFrom, setFilterDateFrom] = useState<string>('');
+  const [filterDateTo, setFilterDateTo] = useState<string>('');
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -106,7 +117,15 @@ export default function PlatformDownloadsPage() {
     const matchesUser = !filterUser || 
       download.downloadedBy.name.toLowerCase().includes(filterUser.toLowerCase()) ||
       download.downloadedBy.email.toLowerCase().includes(filterUser.toLowerCase());
-    return matchesPlatform && matchesUser;
+    const matchesCompany = !filterCompany || 
+      download.downloadedBy.company?.name.toLowerCase().includes(filterCompany.toLowerCase());
+    
+    // Date filtering
+    const downloadDate = new Date(download.downloadedAt);
+    const matchesDateFrom = !filterDateFrom || downloadDate >= new Date(filterDateFrom);
+    const matchesDateTo = !filterDateTo || downloadDate <= new Date(filterDateTo + 'T23:59:59');
+    
+    return matchesPlatform && matchesUser && matchesCompany && matchesDateFrom && matchesDateTo;
   });
 
   // Calculate statistics
@@ -118,6 +137,15 @@ export default function PlatformDownloadsPage() {
     }
     return acc;
   }, {} as Record<Platform, number>);
+
+  // Get unique companies for filter dropdown
+  const uniqueCompanies = Array.from(
+    new Set(
+      downloads
+        .map(d => d.downloadedBy.company?.name)
+        .filter((name): name is string => !!name)
+    )
+  ).sort();
 
   const uniqueUsers = new Set(downloads.map(d => d.downloadedBy.id)).size;
   const totalDownloads = downloads.length;
@@ -237,7 +265,7 @@ export default function PlatformDownloadsPage() {
         <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4">
           Filters
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
               Platform
@@ -268,6 +296,65 @@ export default function PlatformDownloadsPage() {
               className="w-full px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              Company
+            </label>
+            <select
+              value={filterCompany}
+              onChange={(e) => setFilterCompany(e.target.value)}
+              className="w-full px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+            >
+              <option value="">All Companies</option>
+              {uniqueCompanies.map((company) => (
+                <option key={company} value={company}>
+                  {company}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              Date From
+            </label>
+            <input
+              type="date"
+              value={filterDateFrom}
+              onChange={(e) => setFilterDateFrom(e.target.value)}
+              className="w-full px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              Date To
+            </label>
+            <input
+              type="date"
+              value={filterDateTo}
+              onChange={(e) => setFilterDateTo(e.target.value)}
+              className="w-full px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+            />
+          </div>
+
+          {(filterPlatform || filterUser || filterCompany || filterDateFrom || filterDateTo) && (
+            <div className="flex items-end">
+              <button
+                onClick={() => {
+                  setFilterPlatform('');
+                  setFilterUser('');
+                  setFilterCompany('');
+                  setFilterDateFrom('');
+                  setFilterDateTo('');
+                }}
+                className="w-full px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-600 rounded-lg transition-colors"
+              >
+                Clear All Filters
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -340,6 +427,11 @@ export default function PlatformDownloadsPage() {
                         <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
                           {download.downloadedBy.email}
                         </p>
+                        {download.downloadedBy.company && (
+                          <p className="text-xs text-neutral-600 dark:text-neutral-400 truncate mt-0.5">
+                            {download.downloadedBy.company.name}
+                          </p>
+                        )}
                       </div>
                     </div>
 

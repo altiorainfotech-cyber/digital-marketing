@@ -41,7 +41,7 @@ import {
   Home
 } from 'lucide-react';
 import { AssetType, UploadType, AssetStatus, UserRole, Platform, VisibilityLevel } from '@/app/generated/prisma';
-import { initiateAssetDownload } from '@/lib/utils/downloadHelper';
+import { initiateAssetDownload, initiateCarouselDownload } from '@/lib/utils/downloadHelper';
 
 interface Asset {
   id: string;
@@ -303,31 +303,56 @@ function AssetDetailContent() {
   }, [assetId, asset]);
 
   const handleDownload = async () => {
+    console.log('='.repeat(50));
+    console.log('[AssetDetail] 🔽 DOWNLOAD BUTTON CLICKED 🔽');
     console.log('[AssetDetail] Download button clicked', { 
       userRole: user?.role, 
-      isSEOSpecialist: user?.role === UserRole.SEO_SPECIALIST 
+      isSEOSpecialist: user?.role === UserRole.SEO_SPECIALIST,
+      isContentCreator: user?.role === UserRole.CONTENT_CREATOR,
+      userId: user?.id,
+      assetId 
     });
+    console.log('='.repeat(50));
     
     // Check if user is SEO_SPECIALIST - they must select platforms first
     if (user?.role === UserRole.SEO_SPECIALIST) {
-      console.log('[AssetDetail] Opening platform modal for SEO_SPECIALIST');
+      console.log('[AssetDetail] Opening platform modal for', user.role);
       setShowPlatformModal(true);
+      console.log('[AssetDetail] showPlatformModal state set to true');
       return;
     }
     
-    // For other users, proceed with direct download
-    console.log('[AssetDetail] Direct download for non-SEO user');
+    // For ADMIN, CONTENT_CREATOR and other users, proceed with direct download (no platform tracking needed)
+    console.log('[AssetDetail] Direct download for', user?.role);
     await performDownload([]);
   };
 
   const performDownload = async (platforms: Platform[]) => {
+    console.log('[AssetDetail] performDownload called', { 
+      platforms, 
+      assetId, 
+      assetTitle: asset?.title,
+      assetType: asset?.assetType
+    });
+    
     try {
-      await initiateAssetDownload(assetId as string, platforms, asset?.title);
+      // Check if this is a CAROUSEL asset - download all items as ZIP
+      if (asset?.assetType === AssetType.CAROUSEL) {
+        console.log('[AssetDetail] Downloading carousel as ZIP...');
+        await initiateCarouselDownload(assetId as string, platforms, asset?.title);
+        console.log('[AssetDetail] Carousel download completed');
+      } else {
+        // Regular single asset download
+        console.log('[AssetDetail] Calling initiateAssetDownload...');
+        const result = await initiateAssetDownload(assetId as string, platforms, asset?.title);
+        console.log('[AssetDetail] initiateAssetDownload completed', result);
+      }
+      
       setShowPlatformModal(false);
-      console.log('Download started successfully');
+      console.log('[AssetDetail] Download started successfully');
     } catch (err: any) {
-      console.error('Download error:', err);
-      alert(err.message || 'Failed to download asset');
+      console.error('[AssetDetail] Download error:', err);
+      alert(err.message || 'Failed to download asset. Please try again or contact support.');
     }
   };
 
@@ -573,6 +598,7 @@ function AssetDetailContent() {
               )}
               {/* Download button - Mobile optimized, always visible */}
               <Button
+                type="button"
                 variant="primary"
                 icon={<Download className="w-4 h-4" />}
                 onClick={handleDownload}

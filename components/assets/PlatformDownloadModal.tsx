@@ -40,20 +40,43 @@ export function PlatformDownloadModal({
 }: PlatformDownloadModalProps) {
   const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>([]);
 
-  if (!isOpen) return null;
+  console.log('[PlatformDownloadModal] Render', { 
+    isOpen, 
+    assetTitle, 
+    selectedPlatforms,
+    selectedCount: selectedPlatforms.length 
+  });
+
+  if (!isOpen) {
+    console.log('[PlatformDownloadModal] Not rendering - isOpen is false');
+    return null;
+  }
+  
+  console.log('[PlatformDownloadModal] Rendering modal UI');
 
   const handlePlatformToggle = (platform: Platform) => {
-    setSelectedPlatforms((prev) =>
-      prev.includes(platform)
+    console.log('[PlatformDownloadModal] Platform toggled:', platform);
+    setSelectedPlatforms((prev) => {
+      const newSelection = prev.includes(platform)
         ? prev.filter((p) => p !== platform)
-        : [...prev, platform]
-    );
+        : [...prev, platform];
+      console.log('[PlatformDownloadModal] New selection:', newSelection);
+      return newSelection;
+    });
   };
 
   const handleConfirm = () => {
+    console.log('[PlatformDownloadModal] handleConfirm called', { 
+      selectedPlatforms, 
+      count: selectedPlatforms.length 
+    });
+    
     if (selectedPlatforms.length === 0) {
+      console.warn('[PlatformDownloadModal] No platforms selected, blocking download');
       return; // Don't allow download without platform selection
     }
+    
+    console.log('[PlatformDownloadModal] Calling onConfirm with platforms:', selectedPlatforms);
     onConfirm(selectedPlatforms);
     setSelectedPlatforms([]); // Reset for next time
   };
