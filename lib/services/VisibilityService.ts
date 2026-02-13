@@ -33,6 +33,11 @@ export class VisibilityService {
    * @returns true if the user can view the asset, false otherwise
    */
   async canUserViewAsset(user: User, asset: Asset): Promise<boolean> {
+    // ADMIN users can ALWAYS view ALL assets regardless of visibility
+    if (user.role === UserRole.ADMIN) {
+      return true;
+    }
+
     // Users can ALWAYS see their own uploads
     if (user.id === asset.uploaderId) {
       return true;
@@ -51,8 +56,9 @@ export class VisibilityService {
     }
 
     // ADMIN_ONLY: Admin and uploader can view
+    // Since we already checked for uploader and admin above, this should return false
     if (asset.visibility === VisibilityLevel.ADMIN_ONLY) {
-      return user.role === UserRole.ADMIN;
+      return false;
     }
 
     // COMPANY: All users in the asset's company can view

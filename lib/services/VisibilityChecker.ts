@@ -12,7 +12,7 @@
  * Requirements: 6.2-6.6, 7.1-7.3, 7.5
  */
 
-import { UserRole, AssetStatus } from '@/app/generated/prisma';
+import { UserRole, AssetStatus, VisibilityLevel } from '@/app/generated/prisma';
 import type { User, Asset, VisibilityCheckResult } from '@/types';
 import { VisibilityService } from './VisibilityService';
 
@@ -263,14 +263,25 @@ export class VisibilityChecker {
     const filteredAssets: Asset[] = [];
 
     for (const asset of assets) {
-      // Admin can see ALL assets (full access)
-      if (user.role === UserRole.ADMIN) {
+      // Users can ALWAYS see their own uploads regardless of status
+      if (asset.uploaderId === user.id) {
         filteredAssets.push(asset);
         continue;
       }
 
-      // Users can ALWAYS see their own uploads regardless of status
-      if (asset.uploaderId === user.id) {
+      // Admin can see all assets EXCEPT private (UPLOADER_ONLY) assets uploaded by others
+      // Private assets should only appear in the uploader's own list
+      if (user.role === UserRole.ADMIN) {
+        // Skip private assets that don't belong to the admin
+        if (asset.visibility === VisibilityLevel.UPLOADER_ONLY) {
+          // Check if explicitly shared with admin
+          const canView = await this.canView(user, asset);
+          if (canView) {
+            filteredAssets.push(asset);
+          }
+          continue;
+        }
+        // All other assets are visible to admin
         filteredAssets.push(asset);
         continue;
       }

@@ -151,11 +151,17 @@ function AssetDetailContent() {
   const [newVisibility, setNewVisibility] = useState<VisibilityLevel | 'SEO_SPECIALIST' | 'CONTENT_CREATOR'>(VisibilityLevel.COMPANY);
   const [processing, setProcessing] = useState(false);
 
+  // Visibility change modal state (for approved assets)
+  const [showVisibilityModal, setShowVisibilityModal] = useState(false);
+  const [selectedVisibility, setSelectedVisibility] = useState<VisibilityLevel | 'SEO_SPECIALIST' | 'CONTENT_CREATOR'>(VisibilityLevel.COMPANY);
+  const [updatingVisibility, setUpdatingVisibility] = useState(false);
+
   const isAdmin = user?.role === UserRole.ADMIN;
   const isOwner = user?.id === asset?.uploaderId;
   const canShare = isOwner && asset?.uploadType === UploadType.DOC && 
     (asset?.visibility === VisibilityLevel.UPLOADER_ONLY || asset?.visibility === VisibilityLevel.SELECTED_USERS);
   const canApproveReject = isAdmin && asset?.status === AssetStatus.PENDING_REVIEW;
+  const canChangeVisibility = isAdmin && asset?.status === AssetStatus.APPROVED;
 
   // Detect if we came from pending approvals
   const [cameFromPendingApprovals, setCameFromPendingApprovals] = useState(false);
@@ -439,6 +445,57 @@ function AssetDetailContent() {
       alert(err instanceof Error ? err.message : 'Failed to reject asset');
     } finally {
       setProcessing(false);
+    }
+  };
+
+  const handleVisibilityChange = async () => {
+    if (!asset) return;
+    setUpdatingVisibility(true);
+
+    try {
+      // Prepare the request body based on visibility selection
+      let requestBody: any = {};
+      
+      if (selectedVisibility === 'SEO_SPECIALIST' || selectedVisibility === 'CONTENT_CREATOR') {
+        // For role-based visibility, use ROLE visibility level and specify the role
+        requestBody = {
+          visibility: VisibilityLevel.ROLE,
+          allowedRole: selectedVisibility
+        };
+      } else {
+        // For other visibility levels, use as-is
+        requestBody = {
+          visibility: selectedVisibility
+        };
+      }
+
+      const response = await fetch(`/api/assets/${assetId}/visibility`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update visibility');
+      }
+
+      // Refresh asset data
+      const result = await response.json();
+      
+      // Update local asset state
+      setAsset({
+        ...asset,
+        visibility: result.visibility,
+      });
+      
+      setShowVisibilityModal(false);
+      alert('Visibility updated successfully');
+    } catch (err) {
+      console.error('Visibility update error:', err);
+      alert(err instanceof Error ? err.message : 'Failed to update visibility');
+    } finally {
+      setUpdatingVisibility(false);
     }
   };
 
@@ -913,6 +970,30 @@ function AssetDetailContent() {
 
                 <div>
                   <dt className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-1">
+                    <Eye className="w-4 h-4" />
+                    Visibility
+                  </dt>
+                  <dd className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {asset.visibility.replace(/_/g, ' ')}
+                    </span>
+                    {canChangeVisibility && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedVisibility(asset.visibility);
+                          setShowVisibilityModal(true);
+                        }}
+                      >
+                        Change
+                      </Button>
+                    )}
+                  </dd>
+                </div>
+
+                <div>
+                  <dt className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-1">
                     <HardDrive className="w-4 h-4" />
                     File Size
                   </dt>
@@ -1197,6 +1278,57 @@ function AssetDetailContent() {
                 The uploader will see this reason
               </p>
             </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Visibility Change Modal */}
+      {isAdmin && (
+        <Modal
+          isOpen={showVisibilityModal}
+          onClose={() => setShowVisibilityModal(false)}
+          title="Change Asset Visibility"
+          size="md"
+          footer={
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="ghost"
+                onClick={() => setShowVisibilityModal(false)}
+                disabled={updatingVisibility}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleVisibilityChange}
+                loading={updatingVisibility}
+              >
+                Update Visibility
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-neutral-700 dark:text-neutral-300">
+              Change visibility for: <strong>{asset.title}</strong>
+            </p>
+
+            <Select
+              label="Visibility Level"
+              options={[
+                { value: VisibilityLevel.UPLOADER_ONLY, label: 'Private (Uploader Only)' },
+                { value: VisibilityLevel.ADMIN_ONLY, label: 'Admin Only' },
+                { value: VisibilityLevel.PUBLIC, label: 'Public (Everyone)' },
+                { value: VisibilityLevel.COMPANY, label: 'Company' },
+                { value: 'SEO_SPECIALIST', label: 'SEO Specialist Role' },
+                { value: 'CONTENT_CREATOR', label: 'Content Creator Role' },
+                { value: VisibilityLevel.SELECTED_USERS, label: 'Selected Users' },
+              ]}
+              value={selectedVisibility}
+              onChange={(e) => setSelectedVisibility(e.target.value as VisibilityLevel | 'SEO_SPECIALIST' | 'CONTENT_CREATOR')}
+              helperText="Choose who can view this asset"
+              fullWidth
+            />
           </div>
         </Modal>
       )}

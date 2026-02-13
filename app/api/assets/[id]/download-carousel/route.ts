@@ -188,7 +188,7 @@ export async function POST(
       console.log(`[Carousel Download] ZIP created successfully, size: ${zipBuffer.length} bytes`);
 
       // Return ZIP file
-      return new NextResponse(zipBuffer, {
+      return new NextResponse(new Uint8Array(zipBuffer), {
         status: 200,
         headers: {
           'Content-Type': 'application/zip',
