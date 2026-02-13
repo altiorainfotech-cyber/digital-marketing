@@ -30,12 +30,39 @@ import {
   Eye
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
+
+// Helper function to get icon for activity type
+function getActivityIcon(type: string) {
+  switch (type.toLowerCase()) {
+    case 'create':
+    case 'upload':
+      return <Upload size={16} />;
+    case 'update':
+    case 'edit':
+      return <Edit size={16} />;
+    case 'delete':
+      return <Trash2 size={16} />;
+    case 'approve':
+      return <CheckCircle size={16} />;
+    case 'download':
+      return <FileText size={16} />;
+    case 'share':
+      return <Share2 size={16} />;
+    case 'view':
+      return <Eye size={16} />;
+    default:
+      return <Activity size={16} />;
+  }
+}
 
 function DashboardContent() {
   const user = useUser();
   const signOut = useSignOut();
   const router = useRouter();
+  const [stats, setStats] = useState<any>(null);
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Get greeting based on time of day
   const greeting = useMemo(() => {
@@ -45,35 +72,159 @@ function DashboardContent() {
     return 'Good evening';
   }, []);
 
-  // TODO: Fetch real activities from API
-  const mockActivities: ActivityItem[] = [];
+  // Fetch dashboard data
+  useEffect(() => {
+    async function fetchDashboardData() {
+      try {
+        setLoading(true);
+        const [statsRes, activitiesRes] = await Promise.all([
+          fetch('/api/dashboard/stats'),
+          fetch('/api/dashboard/activities?limit=10')
+        ]);
 
-  // Role-specific statistics - TODO: Fetch from API
+        if (statsRes.ok) {
+          const statsData = await statsRes.json();
+          setStats(statsData);
+        }
+
+        if (activitiesRes.ok) {
+          const activitiesData = await activitiesRes.json();
+          // Transform activities to include Date objects and icons
+          const transformedActivities = activitiesData.map((activity: any) => ({
+            ...activity,
+            timestamp: new Date(activity.timestamp),
+            icon: getActivityIcon(activity.type)
+          }));
+          setActivities(transformedActivities);
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (user) {
+      fetchDashboardData();
+    }
+  }, [user]);
+
+  // Role-specific statistics
   const getStatistics = () => {
+    if (!stats) {
+      // Return loading state with zeros
+      switch (user?.role) {
+        case 'ADMIN':
+          return [
+            {
+              title: 'Total Users',
+              value: loading ? '...' : '0',
+              icon: <Users size={24} />,
+              description: 'Active users this month',
+            },
+            {
+              title: 'Companies',
+              value: loading ? '...' : '0',
+              icon: <Building2 size={24} />,
+              description: 'Registered companies',
+            },
+            {
+              title: 'Pending Approvals',
+              value: loading ? '...' : '0',
+              icon: <FileCheck size={24} />,
+              description: 'Assets awaiting review',
+            },
+            {
+              title: 'System Health',
+              value: loading ? '...' : '-',
+              icon: <Activity size={24} />,
+              description: 'Uptime this month',
+            },
+          ];
+        case 'CONTENT_CREATOR':
+          return [
+            {
+              title: 'My Assets',
+              value: loading ? '...' : '0',
+              icon: <FileText size={24} />,
+              description: 'Total assets created',
+            },
+            {
+              title: 'Pending Uploads',
+              value: loading ? '...' : '0',
+              icon: <Upload size={24} />,
+              description: 'Assets in review',
+            },
+            {
+              title: 'Approved',
+              value: loading ? '...' : '0',
+              icon: <CheckCircle size={24} />,
+              description: 'Assets approved',
+            },
+            {
+              title: 'Downloads',
+              value: loading ? '...' : '0',
+              icon: <Eye size={24} />,
+              description: 'Total downloads',
+            },
+          ];
+        case 'SEO_SPECIALIST':
+          return [
+            {
+              title: 'Approved Assets',
+              value: loading ? '...' : '0',
+              icon: <FileCheck size={24} />,
+              description: 'SEO-ready assets',
+            },
+            {
+              title: 'Downloaded Assets',
+              value: loading ? '...' : '0',
+              icon: <FileText size={24} />,
+              description: 'Assets downloaded',
+            },
+            {
+              title: 'Platform Usage',
+              value: loading ? '...' : '0',
+              icon: <BarChart3 size={24} />,
+              description: 'Platforms tracked',
+            },
+            {
+              title: 'Recent Views',
+              value: loading ? '...' : '0',
+              icon: <Eye size={24} />,
+              description: 'Views this week',
+            },
+          ];
+        default:
+          return [];
+      }
+    }
+
+    // Return actual data
     switch (user?.role) {
       case 'ADMIN':
         return [
           {
             title: 'Total Users',
-            value: '0',
+            value: stats.totalUsers?.toString() || '0',
             icon: <Users size={24} />,
             description: 'Active users this month',
           },
           {
             title: 'Companies',
-            value: '0',
+            value: stats.totalCompanies?.toString() || '0',
             icon: <Building2 size={24} />,
             description: 'Registered companies',
           },
           {
             title: 'Pending Approvals',
-            value: '0',
+            value: stats.pendingApprovals?.toString() || '0',
             icon: <FileCheck size={24} />,
             description: 'Assets awaiting review',
           },
           {
             title: 'System Health',
-            value: '-',
+            value: stats.systemHealth || '99.9%',
             icon: <Activity size={24} />,
             description: 'Uptime this month',
           },
@@ -82,52 +233,52 @@ function DashboardContent() {
         return [
           {
             title: 'My Assets',
-            value: '0',
+            value: stats.myAssets?.toString() || '0',
             icon: <FileText size={24} />,
             description: 'Total assets created',
           },
           {
             title: 'Pending Uploads',
-            value: '0',
+            value: stats.pendingUploads?.toString() || '0',
             icon: <Upload size={24} />,
             description: 'Assets in review',
           },
           {
             title: 'Approved',
-            value: '0',
+            value: stats.approvedAssets?.toString() || '0',
             icon: <CheckCircle size={24} />,
             description: 'Assets approved',
           },
           {
-            title: 'Views',
-            value: '0',
+            title: 'Downloads',
+            value: stats.totalDownloads?.toString() || '0',
             icon: <Eye size={24} />,
-            description: 'Total asset views',
+            description: 'Total downloads',
           },
         ];
       case 'SEO_SPECIALIST':
         return [
           {
             title: 'Approved Assets',
-            value: '0',
+            value: stats.approvedAssets?.toString() || '0',
             icon: <FileCheck size={24} />,
             description: 'SEO-ready assets',
           },
           {
             title: 'Downloaded Assets',
-            value: '0',
+            value: stats.downloadedAssets?.toString() || '0',
             icon: <FileText size={24} />,
             description: 'Assets downloaded',
           },
           {
             title: 'Platform Usage',
-            value: '0',
+            value: stats.platformsUsed?.toString() || '0',
             icon: <BarChart3 size={24} />,
             description: 'Platforms tracked',
           },
           {
             title: 'Recent Views',
-            value: '0',
+            value: stats.recentViews?.toString() || '0',
             icon: <Eye size={24} />,
             description: 'Views this week',
           },
@@ -264,7 +415,7 @@ function DashboardContent() {
 
           {/* Recent Activity */}
           <div className="lg:col-span-2">
-            <ActivityFeed activities={mockActivities} maxItems={5} />
+            <ActivityFeed activities={activities} maxItems={5} />
           </div>
         </div>
       </PageContainer>

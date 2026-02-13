@@ -7,10 +7,10 @@ import { Clock } from 'lucide-react';
 
 export interface ActivityItem {
   id: string;
-  type: 'upload' | 'approval' | 'edit' | 'delete' | 'share';
+  type: 'upload' | 'approval' | 'edit' | 'delete' | 'share' | string;
   title: string;
   description: string;
-  timestamp: Date;
+  timestamp: Date | string;
   icon: React.ReactNode;
 }
 
@@ -74,9 +74,10 @@ export function ActivityFeed({ activities, maxItems = 5 }: ActivityFeedProps) {
   );
 }
 
-function formatTimestamp(date: Date): string {
+function formatTimestamp(date: Date | string): string {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
   const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
+  const diffMs = now.getTime() - dateObj.getTime();
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
@@ -86,5 +87,5 @@ function formatTimestamp(date: Date): string {
   if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
   if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
   
-  return date.toLocaleDateString();
+  return dateObj.toLocaleDateString();
 }

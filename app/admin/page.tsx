@@ -11,8 +11,31 @@
 import { ProtectedRoute } from '@/components/auth';
 import Link from 'next/link';
 import { Users, Building2, FileCheck, FolderOpen, ScrollText } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 function AdminDashboardContent() {
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch admin statistics
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/dashboard/stats');
+        if (response.ok) {
+          const data = await response.json();
+          setStats(data);
+        }
+      } catch (error) {
+        console.error('Error fetching admin stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchStats();
+  }, []);
   const quickLinks = [
     {
       title: 'User Management',
@@ -91,20 +114,23 @@ function AdminDashboardContent() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="bg-primary-50 dark:bg-primary-900/20 p-4 rounded-lg border border-primary-100 dark:border-primary-900">
             <p className="text-sm text-primary-700 dark:text-primary-300 font-medium">Total Users</p>
-            <p className="text-2xl font-bold text-primary-900 dark:text-primary-100 mt-1">-</p>
+            <p className="text-2xl font-bold text-primary-900 dark:text-primary-100 mt-1">
+              {loading ? '...' : stats?.totalUsers || '0'}
+            </p>
           </div>
           <div className="bg-success-50 dark:bg-success-900/20 p-4 rounded-lg border border-success-100 dark:border-success-900">
             <p className="text-sm text-success-700 dark:text-success-300 font-medium">Companies</p>
-            <p className="text-2xl font-bold text-success-900 dark:text-success-100 mt-1">-</p>
+            <p className="text-2xl font-bold text-success-900 dark:text-success-100 mt-1">
+              {loading ? '...' : stats?.totalCompanies || '0'}
+            </p>
           </div>
           <div className="bg-warning-50 dark:bg-warning-900/20 p-4 rounded-lg border border-warning-100 dark:border-warning-900">
             <p className="text-sm text-warning-700 dark:text-warning-300 font-medium">Pending Approvals</p>
-            <p className="text-2xl font-bold text-warning-900 dark:text-warning-100 mt-1">-</p>
+            <p className="text-2xl font-bold text-warning-900 dark:text-warning-100 mt-1">
+              {loading ? '...' : stats?.pendingApprovals || '0'}
+            </p>
           </div>
         </div>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-4">
-          Stats will be populated with real data in future updates
-        </p>
       </div>
     </div>
   );

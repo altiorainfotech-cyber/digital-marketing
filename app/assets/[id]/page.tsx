@@ -17,6 +17,8 @@ import { Badge } from '@/lib/design-system/components/primitives/Badge';
 import { Chip } from '@/lib/design-system/components/primitives/Chip';
 import { Breadcrumb } from '@/lib/design-system/components/composite/Breadcrumb';
 import { LoadingState } from '@/lib/design-system/components/patterns/LoadingState';
+import { Modal } from '@/lib/design-system/components/composite/Modal';
+import { Select, SelectOption } from '@/lib/design-system/components/primitives/Select';
 import { ShareModal, PlatformDownloadModal, FullscreenPreviewModal } from '@/components/assets';
 import { CarouselSlider } from '@/components/CarouselSlider';
 import { 
@@ -142,10 +144,39 @@ function AssetDetailContent() {
   // Fullscreen preview modal state
   const [showFullscreenModal, setShowFullscreenModal] = useState(false);
 
+  // Admin approval/rejection modal state
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [showRejectionModal, setShowRejectionModal] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [newVisibility, setNewVisibility] = useState<VisibilityLevel | 'SEO_SPECIALIST' | 'CONTENT_CREATOR'>(VisibilityLevel.COMPANY);
+  const [processing, setProcessing] = useState(false);
+
   const isAdmin = user?.role === UserRole.ADMIN;
   const isOwner = user?.id === asset?.uploaderId;
   const canShare = isOwner && asset?.uploadType === UploadType.DOC && 
     (asset?.visibility === VisibilityLevel.UPLOADER_ONLY || asset?.visibility === VisibilityLevel.SELECTED_USERS);
+  const canApproveReject = isAdmin && asset?.status === AssetStatus.PENDING_REVIEW;
+
+  // Detect if we came from pending approvals
+  const [cameFromPendingApprovals, setCameFromPendingApprovals] = useState(false);
+
+  useEffect(() => {
+    // Check if we came from pending approvals by looking at document.referrer
+    if (typeof window !== 'undefined' && document.referrer.includes('/admin/approvals')) {
+      setCameFromPendingApprovals(true);
+    }
+  }, []);
+
+  // Handle back navigation
+  const handleBackNavigation = () => {
+    if (cameFromPendingApprovals) {
+      router.back();
+    } else if (isAdmin) {
+      router.push('/admin/assets');
+    } else {
+      router.push('/assets');
+    }
+  };
 
   // Load asset details
   useEffect(() => {
@@ -300,6 +331,92 @@ function AssetDetailContent() {
     }
   };
 
+  const handleApprove = async () => {
+    if (!asset) return;
+    setProcessing(true);
+
+    try {
+      // Prepare the request body based on visibility selection
+      let requestBody: any = {};
+      
+      if (newVisibility === 'SEO_SPECIALIST' || newVisibility === 'CONTENT_CREATOR') {
+        // For role-based visibility, use ROLE visibility level and specify the role
+        requestBody = {
+          newVisibility: VisibilityLevel.ROLE,
+          allowedRole: newVisibility
+        };
+      } else {
+        // For other visibility levels, use as-is
+        requestBody = {
+          newVisibility
+        };
+      }
+
+      const response = await fetch(`/api/assets/${assetId}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to approve asset');
+      }
+
+      // Refresh asset data
+      const updatedAsset = await response.json();
+      setAsset(updatedAsset);
+      setShowApprovalModal(false);
+      
+      // If came from pending approvals, go back
+      if (cameFromPendingApprovals) {
+        router.back();
+      }
+    } catch (err) {
+      console.error('Approval error:', err);
+      alert(err instanceof Error ? err.message : 'Failed to approve asset');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!asset || !rejectionReason.trim()) {
+      alert('Rejection reason is required');
+      return;
+    }
+    setProcessing(true);
+
+    try {
+      const response = await fetch(`/api/assets/${assetId}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: rejectionReason }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to reject asset');
+      }
+
+      // Refresh asset data
+      const updatedAsset = await response.json();
+      setAsset(updatedAsset);
+      setShowRejectionModal(false);
+      setRejectionReason('');
+      
+      // If came from pending approvals, go back
+      if (cameFromPendingApprovals) {
+        router.back();
+      }
+    } catch (err) {
+      console.error('Rejection error:', err);
+      alert(err instanceof Error ? err.message : 'Failed to reject asset');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const handleLogUsage = async (e: React.FormEvent) => {
     e.preventDefault();
     setUsageLoading(true);
@@ -379,17 +496,19 @@ function AssetDetailContent() {
               <Button
                 variant="ghost"
                 icon={<ArrowLeft className="w-4 h-4" />}
-                onClick={() => router.push('/assets')}
+                onClick={handleBackNavigation}
               >
-                Back to Assets
+                {cameFromPendingApprovals ? 'Back to Pending Assets' : 'Back to Assets'}
               </Button>
-              <Button
-                variant="outline"
-                icon={<Home className="w-4 h-4" />}
-                onClick={() => router.push('/admin')}
-              >
-                Admin Panel
-              </Button>
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  icon={<Home className="w-4 h-4" />}
+                  onClick={() => router.push('/admin')}
+                >
+                  Admin Panel
+                </Button>
+              )}
             </div>
           </div>
         </nav>
@@ -404,7 +523,10 @@ function AssetDetailContent() {
   }
 
   const breadcrumbItems = [
-    { label: 'Assets', href: '/assets' },
+    { 
+      label: cameFromPendingApprovals ? 'Pending Assets' : 'Assets', 
+      href: cameFromPendingApprovals ? '/admin/approvals' : (isAdmin ? '/admin/assets' : '/assets')
+    },
     { label: asset.title, href: `/assets/${asset.id}` },
   ];
 
@@ -418,20 +540,22 @@ function AssetDetailContent() {
               <Button
                 variant="ghost"
                 icon={<ArrowLeft className="w-4 h-4" />}
-                onClick={() => router.push('/assets')}
+                onClick={handleBackNavigation}
               >
-                Back to Assets
+                {cameFromPendingApprovals ? 'Back to Pending Assets' : 'Back to Assets'}
               </Button>
               <Breadcrumb items={breadcrumbItems} />
             </div>
             <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                icon={<Home className="w-4 h-4" />}
-                onClick={() => router.push('/admin')}
-              >
-                Admin Panel
-              </Button>
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  icon={<Home className="w-4 h-4" />}
+                  onClick={() => router.push('/admin')}
+                >
+                  Admin Panel
+                </Button>
+              )}
               {canShare && (
                 <Button
                   variant="outline"
@@ -819,6 +943,31 @@ function AssetDetailContent() {
               </dl>
             </div>
 
+            {/* Admin Actions - Approve/Reject */}
+            {canApproveReject && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Admin Actions</h2>
+                <div className="flex gap-3">
+                  <Button
+                    variant="primary"
+                    icon={<CheckCircle className="w-4 h-4" />}
+                    onClick={() => setShowApprovalModal(true)}
+                    className="flex-1"
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    variant="danger"
+                    icon={<XCircle className="w-4 h-4" />}
+                    onClick={() => setShowRejectionModal(true)}
+                    className="flex-1"
+                  >
+                    Reject
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Tags */}
             {asset.tags && asset.tags.length > 0 && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -918,6 +1067,107 @@ function AssetDetailContent() {
         onDownload={handleDownload}
         carouselItems={carouselItems}
       />
+
+      {/* Approval Modal */}
+      {isAdmin && (
+        <Modal
+          isOpen={showApprovalModal}
+          onClose={() => setShowApprovalModal(false)}
+          title="Approve Asset"
+          size="md"
+          footer={
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="ghost"
+                onClick={() => setShowApprovalModal(false)}
+                disabled={processing}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleApprove}
+                loading={processing}
+              >
+                Approve Asset
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-neutral-700 dark:text-neutral-300">
+              You are approving: <strong>{asset.title}</strong>
+            </p>
+
+            <Select
+              label="Set Visibility Level"
+              options={[
+                { value: VisibilityLevel.UPLOADER_ONLY, label: 'Private (Uploader Only)' },
+                { value: VisibilityLevel.PUBLIC, label: 'Public (Everyone)' },
+                { value: VisibilityLevel.COMPANY, label: 'Company' },
+                { value: 'SEO_SPECIALIST', label: 'SEO Specialist Role' },
+                { value: 'CONTENT_CREATOR', label: 'Content Creator Role' },
+              ]}
+              value={newVisibility}
+              onChange={(e) => setNewVisibility(e.target.value as VisibilityLevel | 'SEO_SPECIALIST' | 'CONTENT_CREATOR')}
+              helperText="Choose who can view this asset after approval"
+              fullWidth
+            />
+          </div>
+        </Modal>
+      )}
+
+      {/* Rejection Modal */}
+      {isAdmin && (
+        <Modal
+          isOpen={showRejectionModal}
+          onClose={() => setShowRejectionModal(false)}
+          title="Reject Asset"
+          size="md"
+          footer={
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="ghost"
+                onClick={() => setShowRejectionModal(false)}
+                disabled={processing}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                onClick={handleReject}
+                loading={processing}
+                disabled={!rejectionReason.trim()}
+              >
+                Reject Asset
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-neutral-700 dark:text-neutral-300">
+              You are rejecting: <strong>{asset.title}</strong>
+            </p>
+
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                Rejection Reason *
+              </label>
+              <textarea
+                required
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                rows={4}
+                placeholder="Explain why this asset is being rejected..."
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
+              />
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                The uploader will see this reason
+              </p>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

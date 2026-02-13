@@ -9,7 +9,7 @@
 'use client';
 
 import { ProtectedRoute } from '@/components/auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { AssetType, VisibilityLevel } from '@/types';
 import { Modal } from '@/lib/design-system/components/composite/Modal/Modal';
@@ -54,6 +54,7 @@ interface Asset {
 
 function PendingApprovalsContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [assets, setAssets] = useState<Asset[]>([]);
   const [filteredAssets, setFilteredAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,13 +71,25 @@ function PendingApprovalsContent() {
   // Bulk actions
   const [selectedAssetIds, setSelectedAssetIds] = useState<Set<string>>(new Set());
   
-  // Filters
-  const [filterType, setFilterType] = useState<string>('');
-  const [filterCompany, setFilterCompany] = useState<string>('');
-  const [filterDate, setFilterDate] = useState<string>('');
+  // Filters - Initialize from URL params
+  const [filterType, setFilterType] = useState<string>(searchParams.get('type') || '');
+  const [filterCompany, setFilterCompany] = useState<string>(searchParams.get('company') || '');
+  const [filterDate, setFilterDate] = useState<string>(searchParams.get('date') || '');
 
   // Asset preview URLs
   const [assetPreviewUrls, setAssetPreviewUrls] = useState<Record<string, string>>({});
+
+  // Update URL when filters change
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (filterType) params.set('type', filterType);
+    if (filterCompany) params.set('company', filterCompany);
+    if (filterDate) params.set('date', filterDate);
+    
+    const queryString = params.toString();
+    const newUrl = queryString ? `/admin/approvals?${queryString}` : '/admin/approvals';
+    router.replace(newUrl, { scroll: false });
+  }, [filterType, filterCompany, filterDate, router]);
 
   useEffect(() => {
     fetchPendingAssets();
