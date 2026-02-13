@@ -113,10 +113,11 @@ function AssetListContent() {
       }
     };
 
-    if (isAdmin) {
+    // Load companies for ADMIN and SEO_SPECIALIST users
+    if (isAdmin || user?.role === UserRole.SEO_SPECIALIST) {
       fetchCompanies();
     }
-  }, [isAdmin]);
+  }, [isAdmin, user?.role]);
 
   // Load assets with infinite scroll support
   useEffect(() => {
@@ -524,8 +525,8 @@ function AssetListContent() {
                   fullWidth
                 />
 
-                {/* Company (Admin only) */}
-                {isAdmin && (
+                {/* Company (Admin and SEO_SPECIALIST) */}
+                {(isAdmin || user?.role === UserRole.SEO_SPECIALIST) && (
                   <Select
                     label="Company"
                     value={filters.companyId}

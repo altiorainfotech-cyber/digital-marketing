@@ -64,7 +64,7 @@ export function PlatformDownloadModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black bg-opacity-50"
@@ -72,74 +72,76 @@ export function PlatformDownloadModal({
         aria-hidden="true"
       />
 
-      {/* Modal */}
+      {/* Modal - Mobile optimized */}
       <div
-        className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col"
+        className="relative bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] sm:max-h-[85vh] overflow-hidden flex flex-col"
         role="dialog"
         aria-modal="true"
         aria-labelledby="platform-modal-title"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div>
+        {/* Header - Mobile optimized */}
+        <div className="flex items-start justify-between p-4 sm:p-6 border-b border-gray-200">
+          <div className="flex-1 pr-4">
             <h2
               id="platform-modal-title"
-              className="text-xl font-semibold text-gray-900"
+              className="text-lg sm:text-xl font-semibold text-gray-900"
             >
-              Select Platforms for Download
+              Select Platforms
             </h2>
-            <p className="text-sm text-gray-600 mt-1">
-              Choose where you plan to use: <span className="font-medium">{assetTitle}</span>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1 line-clamp-2">
+              Choose where you'll use: <span className="font-medium">{assetTitle}</span>
             </p>
           </div>
           <button
             onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors p-1 -mr-1"
             aria-label="Close modal"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        {/* Content - Mobile optimized scrolling */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="mb-4">
-            <p className="text-sm text-gray-700 mb-4">
-              Select one or more platforms where you intend to use this asset. This helps us track asset usage and optimize content for different channels.
+            <p className="text-xs sm:text-sm text-gray-700 mb-3">
+              Select one or more platforms. Your download will start automatically.
             </p>
             {selectedPlatforms.length === 0 && (
-              <p className="text-sm text-red-600 font-medium">
-                ⚠️ You must select at least one platform to download this asset.
+              <p className="text-xs sm:text-sm text-red-600 font-medium flex items-start gap-2">
+                <span className="flex-shrink-0">⚠️</span>
+                <span>Select at least one platform to download</span>
               </p>
             )}
           </div>
 
-          {/* Platform Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* Platform Grid - Mobile optimized with larger touch targets */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
             {PLATFORM_OPTIONS.map((platform) => {
               const isSelected = selectedPlatforms.includes(platform.value);
               return (
                 <label
                   key={platform.value}
                   className={`
-                    flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all
+                    flex items-start p-3.5 sm:p-4 border-2 rounded-lg cursor-pointer transition-all
+                    active:scale-[0.98] touch-manipulation
                     ${
                       isSelected
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                        ? 'border-blue-500 bg-blue-50 shadow-sm'
+                        : 'border-gray-200 hover:border-gray-300 bg-white active:bg-gray-50'
                     }
                   `}
                 >
                   <Checkbox
                     checked={isSelected}
                     onChange={() => handlePlatformToggle(platform.value)}
-                    className="mt-0.5"
+                    className="mt-0.5 flex-shrink-0"
                   />
-                  <div className="ml-3 flex-1">
-                    <div className="font-medium text-gray-900">
+                  <div className="ml-3 flex-1 min-w-0">
+                    <div className="font-medium text-gray-900 text-sm sm:text-base">
                       {platform.label}
                     </div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-xs sm:text-sm text-gray-600 mt-0.5">
                       {platform.description}
                     </div>
                   </div>
@@ -148,24 +150,27 @@ export function PlatformDownloadModal({
             })}
           </div>
 
-          {/* Selected Count */}
+          {/* Selected Count - Mobile optimized */}
           {selectedPlatforms.length > 0 && (
             <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
+              <p className="text-xs sm:text-sm text-blue-800">
                 <strong>{selectedPlatforms.length}</strong> platform{selectedPlatforms.length !== 1 ? 's' : ''} selected:{' '}
-                {selectedPlatforms
-                  .map((p) => PLATFORM_OPTIONS.find((opt) => opt.value === p)?.label)
-                  .join(', ')}
+                <span className="block sm:inline mt-1 sm:mt-0">
+                  {selectedPlatforms
+                    .map((p) => PLATFORM_OPTIONS.find((opt) => opt.value === p)?.label)
+                    .join(', ')}
+                </span>
               </p>
             </div>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
+        {/* Footer - Mobile optimized with stacked buttons on small screens */}
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 p-4 sm:p-6 border-t border-gray-200 bg-gray-50">
           <Button
             variant="outline"
             onClick={handleClose}
+            className="w-full sm:w-auto"
           >
             Cancel
           </Button>
@@ -174,8 +179,9 @@ export function PlatformDownloadModal({
             icon={<Download className="w-4 h-4" />}
             onClick={handleConfirm}
             disabled={selectedPlatforms.length === 0}
+            className="w-full sm:w-auto"
           >
-            Download Asset
+            Download Now
           </Button>
         </div>
       </div>

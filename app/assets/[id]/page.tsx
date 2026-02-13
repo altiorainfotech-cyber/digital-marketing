@@ -532,26 +532,31 @@ function AssetDetailContent() {
 
   return (
     <div className="assets-page min-h-screen bg-gray-50">
-      {/* Top Navigation */}
-      <nav className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
+      {/* Top Navigation - Mobile optimized */}
+      <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-14 sm:h-16 gap-2">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
               <Button
                 variant="ghost"
                 icon={<ArrowLeft className="w-4 h-4" />}
                 onClick={handleBackNavigation}
+                className="flex-shrink-0 text-xs sm:text-sm"
               >
-                {cameFromPendingApprovals ? 'Back to Pending Assets' : 'Back to Assets'}
+                <span className="hidden sm:inline">{cameFromPendingApprovals ? 'Back to Pending Assets' : 'Back to Assets'}</span>
+                <span className="sm:hidden">Back</span>
               </Button>
-              <Breadcrumb items={breadcrumbItems} />
+              <div className="hidden md:block">
+                <Breadcrumb items={breadcrumbItems} />
+              </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
               {isAdmin && (
                 <Button
                   variant="outline"
                   icon={<Home className="w-4 h-4" />}
                   onClick={() => router.push('/admin')}
+                  className="hidden sm:flex"
                 >
                   Admin Panel
                 </Button>
@@ -561,43 +566,44 @@ function AssetDetailContent() {
                   variant="outline"
                   icon={<Share2 className="w-4 h-4" />}
                   onClick={() => setShowShareModal(true)}
+                  className="flex-shrink-0"
                 >
-                  Share
+                  <span className="hidden sm:inline">Share</span>
                 </Button>
               )}
-              {/* Download button - always visible for all users */}
+              {/* Download button - Mobile optimized, always visible */}
               <Button
                 variant="primary"
                 icon={<Download className="w-4 h-4" />}
                 onClick={handleDownload}
-                className="flex-shrink-0"
+                className="flex-shrink-0 touch-manipulation"
               >
-                Download
+                <span className="hidden sm:inline">Download</span>
               </Button>
             </div>
           </div>
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        {/* Header with Title and Status */}
-        <div className="mb-6">
-          <div className="flex items-start justify-between mb-3">
-            <h1 className="text-3xl font-bold text-gray-900">{asset.title}</h1>
-            <Badge variant={getStatusBadgeVariant(asset.status)} size="lg">
+      <main className="max-w-7xl mx-auto py-4 sm:py-6 px-3 sm:px-6 lg:px-8">
+        {/* Header with Title and Status - Mobile optimized */}
+        <div className="mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">{asset.title}</h1>
+            <Badge variant={getStatusBadgeVariant(asset.status)} size="lg" className="self-start">
               {asset.status.replace('_', ' ')}
             </Badge>
           </div>
         </div>
 
-        {/* Rejection Reason */}
+        {/* Rejection Reason - Mobile optimized */}
         {asset.status === AssetStatus.REJECTED && asset.rejectionReason && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="mb-4 sm:mb-6 bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
             <div className="flex items-start gap-2">
-              <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="text-sm font-semibold text-red-900 mb-1">Rejection Reason</h3>
-                <p className="text-sm text-red-700">{asset.rejectionReason}</p>
+              <XCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div className="min-w-0 flex-1">
+                <h3 className="text-xs sm:text-sm font-semibold text-red-900 mb-1">Rejection Reason</h3>
+                <p className="text-xs sm:text-sm text-red-700 break-words">{asset.rejectionReason}</p>
                 {asset.rejectedAt && (
                   <p className="text-xs text-red-600 mt-2">
                     Rejected on {formatDate(asset.rejectedAt)}

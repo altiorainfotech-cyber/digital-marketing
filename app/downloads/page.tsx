@@ -186,43 +186,43 @@ function DownloadHistoryContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div className="mb-6 sm:mb-8">
           <button
             onClick={() => router.push('/dashboard')}
-            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-3 sm:mb-4 transition-colors touch-manipulation active:scale-95 p-1 -ml-1"
           >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Back to Dashboard</span>
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="text-sm sm:text-base">Back to Dashboard</span>
           </button>
-          <h1 className="text-3xl font-bold text-gray-900">My Download History</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">My Download History</h1>
+          <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600">
             Track all assets you've downloaded and the platforms you're using them on
           </p>
         </div>
 
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          <div className="mb-4 sm:mb-6 bg-red-50 border border-red-200 text-red-700 px-3 sm:px-4 py-2.5 sm:py-3 rounded text-sm">
             {error}
           </div>
         )}
 
-        {/* Platform Statistics */}
+        {/* Platform Statistics - Mobile optimized */}
         {Object.keys(platformStats).length > 0 && (
-          <div className="mb-6 bg-white rounded-lg shadow p-6 border border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Platform Usage</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="mb-4 sm:mb-6 bg-white rounded-lg shadow p-4 sm:p-6 border border-gray-200">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Platform Usage</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
               {Object.entries(platformStats).map(([platform, count]) => (
                 <div
                   key={platform}
-                  className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200"
+                  className="flex items-center gap-2 p-2.5 sm:p-3 bg-gray-50 rounded-lg border border-gray-200"
                 >
-                  <span className="text-2xl">{PLATFORM_ICONS[platform as Platform]}</span>
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">
+                  <span className="text-xl sm:text-2xl flex-shrink-0">{PLATFORM_ICONS[platform as Platform]}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs sm:text-sm font-medium text-gray-900 truncate">
                       {PLATFORM_LABELS[platform as Platform]}
                     </div>
-                    <div className="text-xs text-gray-500">{count} downloads</div>
+                    <div className="text-xs text-gray-500">{count} download{count !== 1 ? 's' : ''}</div>
                   </div>
                 </div>
               ))}
@@ -230,50 +230,52 @@ function DownloadHistoryContent() {
           </div>
         )}
 
-        {/* Filter */}
-        <div className="mb-6 bg-white rounded-lg shadow p-4 border border-gray-200">
-          <div className="flex items-center gap-4">
-            <label className="text-sm font-medium text-gray-700">Filter by Platform:</label>
-            <select
-              value={filterPlatform}
-              onChange={(e) => setFilterPlatform(e.target.value as Platform | '')}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All Platforms</option>
-              {Object.entries(PLATFORM_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-            {filterPlatform && (
-              <button
-                onClick={() => setFilterPlatform('')}
-                className="text-sm text-blue-600 hover:text-blue-800"
+        {/* Filter - Mobile optimized */}
+        <div className="mb-4 sm:mb-6 bg-white rounded-lg shadow p-4 border border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <label className="text-sm font-medium text-gray-700 flex-shrink-0">Filter by Platform:</label>
+            <div className="flex items-center gap-3 flex-1">
+              <select
+                value={filterPlatform}
+                onChange={(e) => setFilterPlatform(e.target.value as Platform | '')}
+                className="flex-1 sm:flex-initial px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               >
-                Clear filter
-              </button>
-            )}
+                <option value="">All Platforms</option>
+                {Object.entries(PLATFORM_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              {filterPlatform && (
+                <button
+                  onClick={() => setFilterPlatform('')}
+                  className="text-sm text-blue-600 hover:text-blue-800 whitespace-nowrap"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Downloads List */}
+        {/* Downloads List - Mobile optimized */}
         <div className="bg-white rounded-lg shadow border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
               Download History ({filteredDownloads.length})
             </h2>
           </div>
 
           {loading ? (
-            <div className="p-6 text-center text-gray-500">Loading downloads...</div>
+            <div className="p-6 sm:p-8 text-center text-gray-500">Loading downloads...</div>
           ) : filteredDownloads.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">
+            <div className="p-6 sm:p-8 text-center text-gray-500">
               {filterPlatform ? 'No downloads found for this platform' : 'No downloads yet'}
             </div>
           ) : (
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="p-4 sm:p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {filteredDownloads.map((download) => {
                   const publicUrl = getPublicUrl(download.asset.storageUrl);
                   const isImage = download.asset.assetType === 'IMAGE';
@@ -284,9 +286,9 @@ function DownloadHistoryContent() {
                       key={download.id}
                       className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200"
                     >
-                      {/* Asset Preview */}
+                      {/* Asset Preview - Mobile optimized */}
                       <Link href={`/assets/${download.assetId}`}>
-                        <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center overflow-hidden group cursor-pointer">
+                        <div className="relative h-40 sm:h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center overflow-hidden group cursor-pointer touch-manipulation active:opacity-90">
                           {isImage && publicUrl ? (
                             <img
                               src={publicUrl}
@@ -338,41 +340,41 @@ function DownloadHistoryContent() {
                         </div>
                       </Link>
 
-                      {/* Card Content */}
-                      <div className="p-4">
+                      {/* Card Content - Mobile optimized */}
+                      <div className="p-3 sm:p-4">
                         {/* Title */}
                         <Link
                           href={`/assets/${download.assetId}`}
-                          className="block mb-2"
+                          className="block mb-2 touch-manipulation"
                         >
-                          <h3 className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors line-clamp-2">
+                          <h3 className="text-base sm:text-lg font-semibold text-gray-900 hover:text-blue-600 active:text-blue-700 transition-colors line-clamp-2">
                             {download.asset.title}
                           </h3>
                         </Link>
 
                         {/* Description */}
                         {download.asset.description && (
-                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                          <p className="text-xs sm:text-sm text-gray-600 mb-3 line-clamp-2">
                             {download.asset.description}
                           </p>
                         )}
 
-                        {/* Download Date & Time */}
+                        {/* Download Date & Time - Mobile optimized */}
                         <div className="mb-3 space-y-1">
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
-                            <Calendar className="w-4 h-4" />
+                          <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500">
+                            <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
                             <span>{formatDate(download.downloadedAt)}</span>
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
-                            <Clock className="w-4 h-4" />
-                            <span>{formatTime(download.downloadedAt)}</span>
-                            <span className="text-xs text-gray-400">
+                          <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500">
+                            <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                            <span className="truncate">{formatTime(download.downloadedAt)}</span>
+                            <span className="text-xs text-gray-400 flex-shrink-0">
                               ({formatRelativeTime(download.downloadedAt)})
                             </span>
                           </div>
                         </div>
 
-                        {/* Platforms */}
+                        {/* Platforms - Mobile optimized */}
                         <div className="border-t border-gray-200 pt-3">
                           <div className="text-xs font-medium text-gray-700 mb-2">
                             Used on platforms:
@@ -384,8 +386,9 @@ function DownloadHistoryContent() {
                                   key={platform}
                                   className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium"
                                 >
-                                  <span>{PLATFORM_ICONS[platform]}</span>
-                                  <span>{PLATFORM_LABELS[platform]}</span>
+                                  <span className="text-sm">{PLATFORM_ICONS[platform]}</span>
+                                  <span className="hidden sm:inline">{PLATFORM_LABELS[platform]}</span>
+                                  <span className="sm:hidden">{PLATFORM_LABELS[platform].substring(0, 3)}</span>
                                 </span>
                               ))
                             ) : (
