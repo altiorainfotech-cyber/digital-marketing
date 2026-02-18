@@ -38,7 +38,8 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Home
+  Home,
+  Upload
 } from 'lucide-react';
 import { AssetType, UploadType, AssetStatus, UserRole, Platform, VisibilityLevel } from '@/app/generated/prisma';
 import { initiateAssetDownload, initiateCarouselDownload } from '@/lib/utils/downloadHelper';
@@ -163,25 +164,29 @@ function AssetDetailContent() {
   const canApproveReject = isAdmin && asset?.status === AssetStatus.PENDING_REVIEW;
   const canChangeVisibility = isAdmin && asset?.status === AssetStatus.APPROVED;
 
-  // Detect if we came from pending approvals
+  // Detect if we came from pending approvals or downloads page
   const [cameFromPendingApprovals, setCameFromPendingApprovals] = useState(false);
+  const [cameFromDownloads, setCameFromDownloads] = useState(false);
 
   useEffect(() => {
     // Check if we came from pending approvals by looking at document.referrer
-    if (typeof window !== 'undefined' && document.referrer.includes('/admin/approvals')) {
-      setCameFromPendingApprovals(true);
+    if (typeof window !== 'undefined') {
+      if (document.referrer.includes('/admin/approvals')) {
+        setCameFromPendingApprovals(true);
+      }
+      // Check sessionStorage for downloads page flag
+      const fromDownloads = sessionStorage.getItem('cameFromDownloads');
+      if (fromDownloads === 'true') {
+        setCameFromDownloads(true);
+        sessionStorage.removeItem('cameFromDownloads');
+      }
     }
   }, []);
 
   // Handle back navigation
   const handleBackNavigation = () => {
-    if (cameFromPendingApprovals) {
-      router.back();
-    } else if (isAdmin) {
-      router.push('/admin/assets');
-    } else {
-      router.push('/assets');
-    }
+    // Always use router.back() to preserve filter state
+    router.back();
   };
 
   // Load asset details
@@ -580,7 +585,7 @@ function AssetDetailContent() {
                 icon={<ArrowLeft className="w-4 h-4" />}
                 onClick={handleBackNavigation}
               >
-                {cameFromPendingApprovals ? 'Back to Pending Assets' : 'Back to Assets'}
+                {cameFromDownloads ? 'Back to Download History' : cameFromPendingApprovals ? 'Back to Pending Assets' : 'Back'}
               </Button>
               {isAdmin && (
                 <Button
@@ -606,8 +611,8 @@ function AssetDetailContent() {
 
   const breadcrumbItems = [
     { 
-      label: cameFromPendingApprovals ? 'Pending Assets' : 'Assets', 
-      href: cameFromPendingApprovals ? '/admin/approvals' : (isAdmin ? '/admin/assets' : '/assets')
+      label: cameFromDownloads ? 'Download History' : cameFromPendingApprovals ? 'Pending Assets' : 'Assets', 
+      href: cameFromDownloads ? '/downloads' : cameFromPendingApprovals ? '/admin/approvals' : (isAdmin ? '/admin/assets' : '/assets')
     },
     { label: asset.title, href: `/assets/${asset.id}` },
   ];
@@ -625,7 +630,7 @@ function AssetDetailContent() {
                 onClick={handleBackNavigation}
                 className="flex-shrink-0 text-xs sm:text-sm"
               >
-                <span className="hidden sm:inline">{cameFromPendingApprovals ? 'Back to Pending Assets' : 'Back to Assets'}</span>
+                <span className="hidden sm:inline">{cameFromDownloads ? 'Back to Download History' : cameFromPendingApprovals ? 'Back to Pending Assets' : 'Back'}</span>
                 <span className="sm:hidden">Back</span>
               </Button>
               <div className="hidden md:block">
@@ -653,6 +658,16 @@ function AssetDetailContent() {
                   <span className="hidden sm:inline">Share</span>
                 </Button>
               )}
+              {/* Upload button - Navigate to upload page */}
+              <Button
+                type="button"
+                variant="outline"
+                icon={<Upload className="w-4 h-4" />}
+                onClick={() => router.push('/assets/upload')}
+                className="flex-shrink-0"
+              >
+                <span className="hidden sm:inline">Upload</span>
+              </Button>
               {/* Download button - Mobile optimized, always visible */}
               <Button
                 type="button"

@@ -9,7 +9,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ProtectedRoute } from '@/components/auth';
 import { useUser } from '@/lib/auth/hooks';
 import { AssetCard, AssetCardData, CalendarFilter } from '@/components/assets';
@@ -55,6 +55,7 @@ interface Company {
 function AssetListContent() {
   const user = useUser();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // State
   const [assets, setAssets] = useState<AssetCardData[]>([]);
@@ -70,23 +71,71 @@ function AssetListContent() {
   const [selectedAssets, setSelectedAssets] = useState<Set<string>>(new Set());
   const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
 
+  // Initialize filters from URL params
   const [filters, setFilters] = useState<SearchFilters>({
-    query: '',
-    assetType: '',
-    status: '',
-    uploadType: '',
-    companyId: '',
-    sortBy: 'uploadedAt',
-    sortOrder: 'desc',
-    date: '',
-    uploaderScope: '',
+    query: searchParams.get('query') || '',
+    assetType: searchParams.get('assetType') || '',
+    status: searchParams.get('status') || '',
+    uploadType: searchParams.get('uploadType') || '',
+    companyId: searchParams.get('companyId') || '',
+    sortBy: searchParams.get('sortBy') || 'uploadedAt',
+    sortOrder: (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc',
+    date: searchParams.get('date') || '',
+    uploaderScope: searchParams.get('uploaderScope') || '',
   });
 
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [searchInput, setSearchInput] = useState('');
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [searchInput, setSearchInput] = useState(searchParams.get('query') || '');
+  const [selectedDate, setSelectedDate] = useState<Date | null>(
+    searchParams.get('date') ? new Date(searchParams.get('date')!) : null
+  );
 
   const isAdmin = user?.role === UserRole.ADMIN;
+
+  // Update URL when filters change
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (filters.query) params.set('query', filters.query);
+    if (filters.assetType) params.set('assetType', filters.assetType);
+    if (filters.status) params.set('status', filters.status);
+    if (filters.uploadType) params.set('uploadType', filters.uploadType);
+    if (filters.companyId) params.set('companyId', filters.companyId);
+    if (filters.sortBy) params.set('sortBy', filters.sortBy);
+    if (filters.sortOrder) params.set('sortOrder', filters.sortOrder);
+    if (filters.date) params.set('date', filters.date);
+    if (filters.uploaderScope) params.set('uploaderScope', filters.uploaderScope);
+    
+    const queryString = params.toString();
+    const newUrl = queryString ? `/assets?${queryString}` : '/assets';
+    router.replace(newUrl, { scroll: false });
+  }, [filters, router]);
+
+  // Store scroll position before navigation
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Check if clicking on an asset link
+      if (target.closest('a[href^="/assets/"]')) {
+        sessionStorage.setItem('assetsScrollPosition', window.scrollY.toString());
+      }
+    };
+    
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, []);
+
+  // Restore scroll position on mount
+  useEffect(() => {
+    const savedScrollPosition = sessionStorage.getItem('assetsScrollPosition');
+    if (savedScrollPosition && assets.length > 0) {
+      // Wait for assets to render before scrolling
+      const scrollTimer = setTimeout(() => {
+        window.scrollTo(0, parseInt(savedScrollPosition, 10));
+        sessionStorage.removeItem('assetsScrollPosition');
+      }, 100);
+      return () => clearTimeout(scrollTimer);
+    }
+  }, [assets]);
 
   // Debounced search - reset page and assets on filter change
   useEffect(() => {
@@ -246,19 +295,21 @@ function AssetListContent() {
     }
   };
 
-  // Delete handler - CONTENT_CREATOR can delete DRAFT and PENDING assets
+  // Delete handler - CONTENT_CREATOR can delete DRAFT, PENDING, and REJECTED assets
   const handleDeleteSelected = async () => {
     if (selectedAssets.size === 0) return;
 
     const assetsToDelete = assets.filter(a => selectedAssets.has(a.id));
     
-    // For CONTENT_CREATOR, only allow deleting DRAFT and PENDING_REVIEW assets
+    // For CONTENT_CREATOR, only allow deleting DRAFT, PENDING_REVIEW, and REJECTED assets
     if (user?.role === UserRole.CONTENT_CREATOR) {
       const nonDeletableAssets = assetsToDelete.filter(
-        a => a.status !== AssetStatus.DRAFT && a.status !== AssetStatus.PENDING_REVIEW
+        a => a.status !== AssetStatus.DRAFT && 
+           a.status !== AssetStatus.PENDING_REVIEW && 
+           a.status !== AssetStatus.REJECTED
       );
       if (nonDeletableAssets.length > 0) {
-        setError('Content creators can only delete draft and pending assets');
+        setError('Content creators can only delete draft, pending, and rejected assets');
         return;
       }
     }

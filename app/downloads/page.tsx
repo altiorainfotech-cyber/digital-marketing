@@ -2,7 +2,7 @@
 
 import { ProtectedRoute } from '@/components/auth';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Platform, UserRole, AssetType } from '@/types';
 import Link from 'next/link';
@@ -53,13 +53,65 @@ const PLATFORM_ICONS: Record<Platform, string> = {
 function DownloadHistoryContent() {
   const { data: session } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [downloads, setDownloads] = useState<DownloadRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filterPlatform, setFilterPlatform] = useState<Platform | ''>('');
-  const [filterCompany, setFilterCompany] = useState<string>('');
-  const [filterDateFrom, setFilterDateFrom] = useState<string>('');
-  const [filterDateTo, setFilterDateTo] = useState<string>('');
+  
+  // Initialize filters from URL params
+  const [filterPlatform, setFilterPlatform] = useState<Platform | ''>(
+    (searchParams.get('platform') as Platform) || ''
+  );
+  const [filterCompany, setFilterCompany] = useState<string>(
+    searchParams.get('company') || ''
+  );
+  const [filterDateFrom, setFilterDateFrom] = useState<string>(
+    searchParams.get('dateFrom') || ''
+  );
+  const [filterDateTo, setFilterDateTo] = useState<string>(
+    searchParams.get('dateTo') || ''
+  );
+
+  // Update URL when filters change
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (filterPlatform) params.set('platform', filterPlatform);
+    if (filterCompany) params.set('company', filterCompany);
+    if (filterDateFrom) params.set('dateFrom', filterDateFrom);
+    if (filterDateTo) params.set('dateTo', filterDateTo);
+    
+    const queryString = params.toString();
+    const newUrl = queryString ? `/downloads?${queryString}` : '/downloads';
+    router.replace(newUrl, { scroll: false });
+  }, [filterPlatform, filterCompany, filterDateFrom, filterDateTo, router]);
+
+  // Store scroll position before navigation
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Check if clicking on an asset link
+      if (target.closest('a[href^="/assets/"]')) {
+        sessionStorage.setItem('downloadsScrollPosition', window.scrollY.toString());
+        sessionStorage.setItem('cameFromDownloads', 'true');
+      }
+    };
+    
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, []);
+
+  // Restore scroll position on mount
+  useEffect(() => {
+    const savedScrollPosition = sessionStorage.getItem('downloadsScrollPosition');
+    if (savedScrollPosition && downloads.length > 0) {
+      // Wait for downloads to render before scrolling
+      const scrollTimer = setTimeout(() => {
+        window.scrollTo(0, parseInt(savedScrollPosition, 10));
+        sessionStorage.removeItem('downloadsScrollPosition');
+      }, 100);
+      return () => clearTimeout(scrollTimer);
+    }
+  }, [downloads]);
 
   useEffect(() => {
     if (session?.user?.role !== UserRole.SEO_SPECIALIST) {
