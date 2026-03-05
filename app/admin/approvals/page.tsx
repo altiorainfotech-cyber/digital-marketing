@@ -62,10 +62,12 @@ function PendingApprovalsContent() {
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [showRejectionModal, setShowRejectionModal] = useState(false);
+  const [showBulkApprovalModal, setShowBulkApprovalModal] = useState(false);
   const [showBulkRejectionModal, setShowBulkRejectionModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [bulkRejectionReason, setBulkRejectionReason] = useState('');
-  const [newVisibility, setNewVisibility] = useState<VisibilityLevel | 'SEO_SPECIALIST' | 'CONTENT_CREATOR'>(VisibilityLevel.COMPANY);
+  const [newVisibility, setNewVisibility] = useState<VisibilityLevel | 'SEO_SPECIALIST' | 'CONTENT_CREATOR'>(VisibilityLevel.PUBLIC);
+  const [bulkVisibility, setBulkVisibility] = useState<VisibilityLevel | 'SEO_SPECIALIST' | 'CONTENT_CREATOR'>(VisibilityLevel.PUBLIC);
   const [processing, setProcessing] = useState(false);
   
   // Bulk actions
@@ -299,19 +301,51 @@ function PendingApprovalsContent() {
   const handleBulkApprove = async () => {
     if (selectedAssetIds.size === 0) return;
     
+    // Open bulk approval modal
+    setShowBulkApprovalModal(true);
+  };
+
+  const handleBulkApproveConfirm = async () => {
+    if (selectedAssetIds.size === 0) return;
+    
     setError(null);
     setProcessing(true);
 
     try {
+      // Prepare the request body based on visibility selection
+      let requestBody: any = {};
+      
+      if (bulkVisibility === 'SEO_SPECIALIST' || bulkVisibility === 'CONTENT_CREATOR') {
+        // For role-based visibility, use ROLE visibility level and specify the role
+        requestBody = {
+          newVisibility: VisibilityLevel.ROLE,
+          allowedRole: bulkVisibility
+        };
+      } else {
+        // For other visibility levels, use as-is
+        requestBody = {
+          newVisibility: bulkVisibility
+        };
+      }
+
       const promises = Array.from(selectedAssetIds).map((id) =>
         fetch(`/api/assets/${id}/approve`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ newVisibility: VisibilityLevel.COMPANY }),
+          body: JSON.stringify(requestBody),
         })
       );
 
-      await Promise.all(promises);
+      const results = await Promise.allSettled(promises);
+      
+      // Check if any approvals failed
+      const failedCount = results.filter(r => r.status === 'rejected').length;
+      
+      if (failedCount > 0) {
+        setError(`Failed to approve ${failedCount} of ${selectedAssetIds.size} assets`);
+      }
+
+      setShowBulkApprovalModal(false);
       setSelectedAssetIds(new Set());
       fetchPendingAssets();
     } catch (err) {
@@ -824,6 +858,47 @@ function PendingApprovalsContent() {
             />
           </div>
         )}
+      </Modal>
+
+      {/* Bulk Approval Modal */}
+      <Modal
+        isOpen={showBulkApprovalModal}
+        onClose={() => setShowBulkApprovalModal(false)}
+        title="Approve Multiple Assets"
+        size="md"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="ghost"
+              onClick={() => setShowBulkApprovalModal(false)}
+              disabled={processing}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleBulkApproveConfirm}
+              loading={processing}
+            >
+              Approve {selectedAssetIds.size} Assets
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-neutral-700 dark:text-neutral-300">
+            You are approving <strong>{selectedAssetIds.size} assets</strong>. This action will apply the same visibility level to all selected assets.
+          </p>
+
+          <Select
+            label="Set Visibility Level"
+            options={visibilityOptions}
+            value={bulkVisibility}
+            onChange={(e) => setBulkVisibility(e.target.value as VisibilityLevel | 'SEO_SPECIALIST' | 'CONTENT_CREATOR')}
+            helperText="Choose who can view these assets after approval"
+            fullWidth
+          />
+        </div>
       </Modal>
 
       {/* Rejection Modal */}
