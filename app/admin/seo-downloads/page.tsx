@@ -97,71 +97,65 @@ export default function AdminSEODownloadsPage() {
       setError(null);
 
       const response = await fetch('/api/admin/seo-downloads');
-
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch downloads');
+        throw new Error('Failed to fetch SEO downloads');
       }
 
       const data = await response.json();
       setDownloads(data.downloads || []);
     } catch (err) {
-      console.error('Error fetching downloads:', err);
       setError(err instanceof Error ? err.message : 'Failed to load downloads');
     } finally {
       setLoading(false);
     }
   };
 
+  // Filter downloads
   const filteredDownloads = downloads.filter((download) => {
-    if (filterPlatform && !download.platforms.includes(filterPlatform)) {
-      return false;
-    }
-    if (filterUser && !download.downloadedBy.name.toLowerCase().includes(filterUser.toLowerCase())) {
-      return false;
-    }
-    if (filterCompany) {
-      const companyName = download.downloadedBy.company?.name || download.asset.company?.name || '';
-      if (!companyName.toLowerCase().includes(filterCompany.toLowerCase())) {
-        return false;
-      }
-    }
-    if (filterDateFrom) {
-      const downloadDate = new Date(download.downloadedAt);
-      const fromDate = new Date(filterDateFrom);
-      if (downloadDate < fromDate) {
-        return false;
-      }
-    }
-    if (filterDateTo) {
-      const downloadDate = new Date(download.downloadedAt);
-      const toDate = new Date(filterDateTo);
-      toDate.setHours(23, 59, 59, 999);
-      if (downloadDate > toDate) {
-        return false;
-      }
-    }
-    return true;
+    const matchesPlatform = !filterPlatform || download.platforms.includes(filterPlatform);
+    const matchesUser = !filterUser || 
+      download.downloadedBy.name.toLowerCase().includes(filterUser.toLowerCase()) ||
+      download.downloadedBy.email.toLowerCase().includes(filterUser.toLowerCase());
+    const matchesCompany = !filterCompany || 
+      download.downloadedBy.company?.name.toLowerCase().includes(filterCompany.toLowerCase());
+    
+    // Date filtering
+    const downloadDate = new Date(download.downloadedAt);
+    const matchesDateFrom = !filterDateFrom || downloadDate >= new Date(filterDateFrom);
+    const matchesDateTo = !filterDateTo || downloadDate <= new Date(filterDateTo + 'T23:59:59');
+    
+    return matchesPlatform && matchesUser && matchesCompany && matchesDateFrom && matchesDateTo;
   });
 
-  const uniqueUsers = Array.from(new Set(downloads.map(d => d.downloadedBy.name))).sort();
+  // Calculate statistics
+  const platformStats = downloads.reduce((acc, download) => {
+    if (download.platforms && Array.isArray(download.platforms)) {
+      download.platforms.forEach((platform) => {
+        acc[platform] = (acc[platform] || 0) + 1;
+      });
+    }
+    return acc;
+  }, {} as Record<Platform, number>);
+
+  // Get unique companies for filter dropdown
   const uniqueCompanies = Array.from(
     new Set(
       downloads
-        .map(d => d.downloadedBy.company?.name || d.asset.company?.name)
-        .filter(Boolean)
+        .map(d => d.downloadedBy.company?.name)
+        .filter((name): name is string => !!name)
     )
   ).sort();
 
-  if (loading) {
+  const uniqueUsers = new Set(downloads.map(d => d.downloadedBy.id)).size;
+  const totalDownloads = downloads.length;
+
+  if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-              <p className="mt-2 text-neutral-600 dark:text-neutral-400">Loading downloads...</p>
-            </div>
-          </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-4 text-neutral-600 dark:text-neutral-400">Loading SEO downloads...</p>
         </div>
       </div>
     );
@@ -169,124 +163,184 @@ export default function AdminSEODownloadsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-            <p className="text-red-800 dark:text-red-200">{error}</p>
-          </div>
+      <div className="p-6">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <p className="text-red-800 dark:text-red-200">{error}</p>
+          <button
+            onClick={fetchDownloads}
+            className="mt-2 text-sm text-red-600 dark:text-red-400 hover:underline"
+          >
+            Try again
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">
-              SEO Specialist Downloads
-            </h1>
-            <p className="mt-1 text-neutral-600 dark:text-neutral-400">
-              View all asset downloads by SEO Specialists across the platform
-            </p>
+    <div className="p-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="mb-8">
+        <button
+          onClick={() => router.push('/admin')}
+          className="inline-flex items-center gap-2 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 mb-4 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span>Back to Admin Dashboard</span>
+        </button>
+        <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">
+          SEO Specialist Downloads
+        </h1>
+        <p className="text-neutral-600 dark:text-neutral-400">
+          View all downloads made by SEO Specialists and track how assets are being used across different platforms
+        </p>
+      </div>
+
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white dark:bg-neutral-800 rounded-lg shadow p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">Total Downloads</p>
+              <p className="text-3xl font-bold text-neutral-900 dark:text-neutral-100 mt-1">
+                {totalDownloads}
+              </p>
+            </div>
+            <Download className="w-10 h-10 text-primary-600" />
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-800 p-6">
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4">
-            Filters
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {/* Platform Filter */}
+        <div className="bg-white dark:bg-neutral-800 rounded-lg shadow p-6">
+          <div className="flex items-center justify-between">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                Platform
-              </label>
-              <select
-                value={filterPlatform}
-                onChange={(e) => setFilterPlatform(e.target.value as Platform | '')}
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">SEO Specialists</p>
+              <p className="text-3xl font-bold text-neutral-900 dark:text-neutral-100 mt-1">
+                {uniqueUsers}
+              </p>
+            </div>
+            <User className="w-10 h-10 text-primary-600" />
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-neutral-800 rounded-lg shadow p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">Platforms Used</p>
+              <p className="text-3xl font-bold text-neutral-900 dark:text-neutral-100 mt-1">
+                {Object.keys(platformStats).length}
+              </p>
+            </div>
+            <MapPin className="w-10 h-10 text-primary-600" />
+          </div>
+        </div>
+      </div>
+
+      {/* Platform Statistics */}
+      <div className="bg-white dark:bg-neutral-800 rounded-lg shadow p-6 mb-8">
+        <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4">
+          Platform Distribution
+        </h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {Object.entries(platformStats)
+            .sort(([, a], [, b]) => b - a)
+            .map(([platform, count]) => (
+              <div
+                key={platform}
+                className="flex flex-col items-center p-4 bg-neutral-50 dark:bg-neutral-700 rounded-lg"
               >
-                <option value="">All Platforms</option>
-                {Object.entries(PLATFORM_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${PLATFORM_COLORS[platform as Platform]}`}>
+                  {PLATFORM_LABELS[platform as Platform]}
+                </span>
+                <span className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mt-2">
+                  {count}
+                </span>
+                <span className="text-xs text-neutral-600 dark:text-neutral-400">downloads</span>
+              </div>
+            ))}
+        </div>
+      </div>
 
-            {/* User Filter */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                SEO Specialist
-              </label>
-              <select
-                value={filterUser}
-                onChange={(e) => setFilterUser(e.target.value)}
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
-              >
-                <option value="">All Users</option>
-                {uniqueUsers.map((user) => (
-                  <option key={user} value={user}>
-                    {user}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Company Filter */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                Company
-              </label>
-              <select
-                value={filterCompany}
-                onChange={(e) => setFilterCompany(e.target.value)}
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
-              >
-                <option value="">All Companies</option>
-                {uniqueCompanies.map((company) => (
-                  <option key={company} value={company}>
-                    {company}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Date From */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                From Date
-              </label>
-              <input
-                type="date"
-                value={filterDateFrom}
-                onChange={(e) => setFilterDateFrom(e.target.value)}
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
-              />
-            </div>
-
-            {/* Date To */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                To Date
-              </label>
-              <input
-                type="date"
-                value={filterDateTo}
-                onChange={(e) => setFilterDateTo(e.target.value)}
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
-              />
-            </div>
+      {/* Filters */}
+      <div className="bg-white dark:bg-neutral-800 rounded-lg shadow p-6 mb-6">
+        <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4">
+          Filters
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              Platform
+            </label>
+            <select
+              value={filterPlatform}
+              onChange={(e) => setFilterPlatform(e.target.value as Platform | '')}
+              className="w-full px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+            >
+              <option value="">All Platforms</option>
+              {Object.entries(PLATFORM_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* Clear Filters */}
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              SEO Specialist
+            </label>
+            <input
+              type="text"
+              value={filterUser}
+              onChange={(e) => setFilterUser(e.target.value)}
+              placeholder="Search by name or email..."
+              className="w-full px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              Company
+            </label>
+            <select
+              value={filterCompany}
+              onChange={(e) => setFilterCompany(e.target.value)}
+              className="w-full px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+            >
+              <option value="">All Companies</option>
+              {uniqueCompanies.map((company) => (
+                <option key={company} value={company}>
+                  {company}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              Date From
+            </label>
+            <input
+              type="date"
+              value={filterDateFrom}
+              onChange={(e) => setFilterDateFrom(e.target.value)}
+              className="w-full px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              Date To
+            </label>
+            <input
+              type="date"
+              value={filterDateTo}
+              onChange={(e) => setFilterDateTo(e.target.value)}
+              className="w-full px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+            />
+          </div>
+
           {(filterPlatform || filterUser || filterCompany || filterDateFrom || filterDateTo) && (
-            <div className="mt-4">
+            <div className="flex items-end">
               <button
                 onClick={() => {
                   setFilterPlatform('');
@@ -295,142 +349,150 @@ export default function AdminSEODownloadsPage() {
                   setFilterDateFrom('');
                   setFilterDateTo('');
                 }}
-                className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                className="w-full px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-600 rounded-lg transition-colors"
               >
-                Clear all filters
+                Clear All Filters
               </button>
             </div>
           )}
         </div>
+      </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-800 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400">Total Downloads</p>
-                <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mt-1">
-                  {filteredDownloads.length}
-                </p>
-              </div>
-              <FileDown className="w-8 h-8 text-primary-600 dark:text-primary-400" />
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-800 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400">Unique Assets</p>
-                <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mt-1">
-                  {new Set(filteredDownloads.map(d => d.assetId)).size}
-                </p>
-              </div>
-              <Eye className="w-8 h-8 text-green-600 dark:text-green-400" />
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-800 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400">SEO Specialists</p>
-                <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mt-1">
-                  {new Set(filteredDownloads.map(d => d.downloadedBy.id)).size}
-                </p>
-              </div>
-              <User className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-            </div>
-          </div>
+      {/* Downloads Grid */}
+      <div className="bg-white dark:bg-neutral-800 rounded-lg shadow">
+        <div className="p-6 border-b border-neutral-200 dark:border-neutral-700">
+          <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+            Download History ({filteredDownloads.length})
+          </h2>
         </div>
 
-        {/* Downloads List */}
-        <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-800">
-          <div className="p-6 border-b border-neutral-200 dark:border-neutral-800">
-            <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-              Download History
-            </h2>
+        {filteredDownloads.length === 0 ? (
+          <div className="p-12 text-center">
+            <Download className="w-16 h-16 text-neutral-400 mx-auto mb-4" />
+            <p className="text-neutral-600 dark:text-neutral-400">
+              {downloads.length === 0
+                ? 'No downloads yet. SEO Specialists haven\'t downloaded any assets.'
+                : 'No downloads match your filters.'}
+            </p>
           </div>
-
-          {filteredDownloads.length === 0 ? (
-            <div className="p-12 text-center">
-              <FileDown className="w-12 h-12 text-neutral-400 dark:text-neutral-600 mx-auto mb-4" />
-              <p className="text-neutral-600 dark:text-neutral-400">
-                No downloads found matching your filters
-              </p>
-            </div>
-          ) : (
-            <div className="divide-y divide-neutral-200 dark:divide-neutral-800">
+        ) : (
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredDownloads.map((download) => (
-                <div key={download.id} className="p-6 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      {/* Asset Info */}
-                      <div className="mb-3">
-                        <a
-                          href={`/assets/${download.assetId}`}
-                          className="text-lg font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
-                        >
-                          {download.asset.title}
-                        </a>
-                        <div className="flex items-center gap-2 mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-                          <span className="px-2 py-0.5 bg-neutral-100 dark:bg-neutral-800 rounded text-xs">
-                            {download.asset.assetType}
-                          </span>
-                          {download.asset.company && (
-                            <>
-                              <span>•</span>
-                              <MapPin className="w-3 h-3" />
-                              <span>{download.asset.company.name}</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
+                <div
+                  key={download.id}
+                  className="bg-neutral-50 dark:bg-neutral-700 rounded-lg border border-neutral-200 dark:border-neutral-600 overflow-hidden hover:shadow-lg transition-shadow"
+                >
+                  {/* Card Header */}
+                  <div className="p-4 bg-white dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-600">
+                    <div className="flex items-start justify-between mb-2">
+                      <a
+                        href={`/assets/${download.assetId}`}
+                        className="text-base font-semibold text-neutral-900 dark:text-neutral-100 hover:text-primary-600 dark:hover:text-primary-400 line-clamp-2 flex-1 transition-colors"
+                      >
+                        {download.asset.title}
+                      </a>
+                      <span className="ml-2 px-2 py-1 bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 rounded text-xs font-medium whitespace-nowrap">
+                        {download.asset.assetType}
+                      </span>
+                    </div>
+                    {download.asset.description && (
+                      <p className="text-xs text-neutral-600 dark:text-neutral-400 line-clamp-2">
+                        {download.asset.description}
+                      </p>
+                    )}
+                  </div>
 
-                      {/* Platforms */}
-                      <div className="mb-3">
-                        <p className="text-xs text-neutral-500 dark:text-neutral-500 mb-1">
-                          Downloaded for:
+                  {/* Card Body */}
+                  <div className="p-4 space-y-3">
+                    {/* Asset Creator */}
+                    <div className="flex items-start gap-2">
+                      <User className="w-4 h-4 text-neutral-500 dark:text-neutral-400 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400">Created by</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">
+                          {download.asset.uploader.name}
                         </p>
-                        <div className="flex flex-wrap gap-2">
-                          {download.platforms.map((platform) => (
+                      </div>
+                    </div>
+
+                    {/* Downloaded By */}
+                    <div className="flex items-start gap-2">
+                      <Download className="w-4 h-4 text-neutral-500 dark:text-neutral-400 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400">Downloaded by</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">
+                          {download.downloadedBy.name}
+                        </p>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+                          {download.downloadedBy.email}
+                        </p>
+                        {download.downloadedBy.company && (
+                          <p className="text-xs text-neutral-600 dark:text-neutral-400 truncate mt-0.5">
+                            {download.downloadedBy.company.name}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Download Date */}
+                    <div className="flex items-start gap-2">
+                      <Calendar className="w-4 h-4 text-neutral-500 dark:text-neutral-400 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400">Downloaded on</p>
+                        <p className="text-sm text-neutral-900 dark:text-neutral-100">
+                          {new Date(download.downloadedAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </p>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                          {new Date(download.downloadedAt).toLocaleTimeString('en-US', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Platforms */}
+                    <div>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Platforms</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {download.platforms && download.platforms.length > 0 ? (
+                          download.platforms.map((platform) => (
                             <span
                               key={platform}
-                              className={`px-2 py-1 rounded-md text-xs font-medium ${PLATFORM_COLORS[platform]}`}
+                              className={`px-2 py-1 rounded text-xs font-medium ${PLATFORM_COLORS[platform]}`}
                             >
                               {PLATFORM_LABELS[platform]}
                             </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Download Info */}
-                      <div className="flex flex-wrap items-center gap-4 text-sm text-neutral-600 dark:text-neutral-400">
-                        <div className="flex items-center gap-1">
-                          <User className="w-4 h-4" />
-                          <span>{download.downloadedBy.name}</span>
-                        </div>
-                        {download.downloadedBy.company && (
-                          <div className="flex items-center gap-1">
-                            <MapPin className="w-4 h-4" />
-                            <span>{download.downloadedBy.company.name}</span>
-                          </div>
+                          ))
+                        ) : (
+                          <span className="text-xs text-neutral-400 dark:text-neutral-500 italic">
+                            No platforms
+                          </span>
                         )}
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          <span>{new Date(download.downloadedAt).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-
-                      {/* Uploader Info */}
-                      <div className="mt-2 text-xs text-neutral-500 dark:text-neutral-500">
-                        Uploaded by: {download.asset.uploader.name}
                       </div>
                     </div>
+                  </div>
+
+                  {/* Card Footer - Action Buttons */}
+                  <div className="p-3 bg-white dark:bg-neutral-800 border-t border-neutral-200 dark:border-neutral-600 flex gap-2">
+                    <a
+                      href={`/assets/${download.assetId}`}
+                      className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/30 hover:bg-primary-100 dark:hover:bg-primary-900/50 rounded-lg transition-colors"
+                    >
+                      <Eye className="w-4 h-4" />
+                      View Asset
+                    </a>
                   </div>
                 </div>
               ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
