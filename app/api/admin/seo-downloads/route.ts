@@ -100,9 +100,9 @@ export async function GET(request: NextRequest) {
               title: true,
               assetType: true,
               description: true,
-              uploadedById: true,
+              uploaderId: true,
               companyId: true,
-              Uploader: {
+              uploader: {
                 select: {
                   id: true,
                   name: true,
@@ -115,17 +115,6 @@ export async function GET(request: NextRequest) {
                   name: true,
                 },
               },
-            },
-          },
-          PlatformUsages: {
-            select: {
-              platform: true,
-              postUrl: true,
-              campaignName: true,
-              usedAt: true,
-            },
-            orderBy: {
-              usedAt: 'desc',
             },
           },
         },
@@ -150,18 +139,12 @@ export async function GET(request: NextRequest) {
           assetType: download.Asset.assetType,
           description: download.Asset.description || undefined,
           uploader: {
-            id: download.Asset.Uploader.id,
-            name: download.Asset.Uploader.name || 'Unknown',
-            email: download.Asset.Uploader.email,
+            id: download.Asset.uploader.id,
+            name: download.Asset.uploader.name || 'Unknown',
+            email: download.Asset.uploader.email,
           },
           company: download.Asset.Company,
         },
-        platformUsages: download.PlatformUsages.map((usage) => ({
-          platform: usage.platform as Platform,
-          postUrl: usage.postUrl || undefined,
-          campaignName: usage.campaignName,
-          usedAt: usage.usedAt,
-        })),
       }));
 
       console.log(`[Admin SEO Downloads] Found ${formattedDownloads.length} downloads`);
