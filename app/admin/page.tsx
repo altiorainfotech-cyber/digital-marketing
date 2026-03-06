@@ -10,7 +10,7 @@
 
 import { ProtectedRoute } from '@/components/auth';
 import Link from 'next/link';
-import { Users, Building2, FileCheck, FolderOpen, ScrollText } from 'lucide-react';
+import { Users, Building2, FileCheck, FolderOpen, ScrollText, Download } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 function AdminDashboardContent() {
@@ -64,6 +64,13 @@ function AdminDashboardContent() {
       href: '/admin/assets',
       icon: <FolderOpen className="w-8 h-8" />,
       color: 'purple',
+    },
+    {
+      title: 'SEO Downloads',
+      description: 'View SEO Specialist download activity',
+      href: '/admin/seo-downloads',
+      icon: <Download className="w-8 h-8" />,
+      color: 'indigo',
     },
     {
       title: 'Audit Logs',

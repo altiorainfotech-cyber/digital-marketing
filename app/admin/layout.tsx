@@ -22,7 +22,8 @@ import {
   BarChart3,
   LayoutDashboard,
   LogOut,
-  User
+  User,
+  Download
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -99,6 +100,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       href: '/admin/approvals',
       icon: <FileCheck className="w-5 h-5" />,
       active: pathname?.startsWith('/admin/approvals'),
+    },
+    {
+      id: 'seo-downloads',
+      label: 'SEO Downloads',
+      href: '/admin/seo-downloads',
+      icon: <Download className="w-5 h-5" />,
+      active: pathname?.startsWith('/admin/seo-downloads'),
     },
     {
       id: 'audit-logs',
